@@ -15,10 +15,9 @@ import {
   saveChapter,
   saveProject,
 } from "./storage/project-store";
+import type { ProjectSummary } from "./storage/project-store";
 
-export async function listProjects(): Promise<
-  Pick<BookProject, "id" | "title" | "pitch" | "updatedAt" | "chapters">[]
-> {
+export async function listProjects(): Promise<ProjectSummary[]> {
   const userId = await getStorageUserId();
   return listProjectSummaries(userId);
 }

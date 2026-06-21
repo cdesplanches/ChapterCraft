@@ -47,10 +47,17 @@ function projectPrefix(userId: string, projectId: string) {
   return userKey(userId, "projects", projectId);
 }
 
-type ChapterIndexEntry = Pick<
+export type ChapterIndexEntry = Pick<
   Chapter,
   "id" | "number" | "title" | "status" | "updatedAt"
 >;
+
+export type ProjectSummary = Omit<
+  Pick<BookProject, "id" | "title" | "pitch" | "updatedAt" | "chapters">,
+  "chapters"
+> & {
+  chapters: Pick<ChapterIndexEntry, "id" | "number" | "title" | "status">[];
+};
 
 export interface ProjectManifest {
   id: string;
@@ -220,9 +227,9 @@ export async function loadManifest(
   return legacy ? manifestFromProject(legacy) : null;
 }
 
-export async function listProjectSummaries(userId: string): Promise<
-  Pick<BookProject, "id" | "title" | "pitch" | "updatedAt" | "chapters">[]
-> {
+export async function listProjectSummaries(
+  userId: string
+): Promise<ProjectSummary[]> {
   const backend = await getStorageBackend();
   const prefix = userKey(userId, "projects");
   let keys = await backend.list(prefix);
