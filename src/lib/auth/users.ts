@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getD1 } from "@/lib/db";
 import { User, UserRecord } from "./types";
 
 const AUTH_FILE = path.join(process.cwd(), "data", "auth", "users.json");
@@ -11,15 +11,7 @@ interface UserStore {
 }
 
 async function getDb(): Promise<D1Database | null> {
-  try {
-    const { env } = getCloudflareContext();
-    const db = env.DB;
-    if (!db) return null;
-    await db.prepare("SELECT 1").first();
-    return db;
-  } catch {
-    return null;
-  }
+  return getD1();
 }
 
 async function ensureD1Schema(db: D1Database) {

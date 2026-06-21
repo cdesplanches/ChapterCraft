@@ -20,7 +20,7 @@ function projectKey(userId: string, id: string) {
   return userKey(userId, "projects", `${id}.json`);
 }
 
-/** Legacy local path before R2 / multi-user layout */
+/** Legacy local path before D1 / multi-user layout */
 function legacyProjectKey(id: string) {
   return `projects/${id}.json`;
 }

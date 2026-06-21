@@ -35,5 +35,5 @@ yarn-error.log*
 next-env.d.ts
 cloudflare-env.d.ts
 
-# chaptercraft data (local dev — cloud uses R2)
+# chaptercraft data (local dev — cloud uses D1)
 /data/

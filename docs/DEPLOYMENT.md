@@ -1,16 +1,22 @@
 # Cloudflare deployment guide
 
-Deploy ChapterCraft to **Cloudflare Workers** (via OpenNext) with **R2** for project storage and **Cloudflare Access** for authentication.
+Deploy ChapterCraft to **Cloudflare Workers** (via OpenNext) with **D1 (SQLite)** for all application data — users, projects, and settings. No R2 required.
 
 ## Architecture
 
 ```
-Browser → Cloudflare Access (login) → Workers (Next.js) → R2 bucket
+Browser → Workers (Next.js) → D1 (SQLite)
+                ↓
+         Built-in app auth (signup / login)
 ```
 
-- Each authenticated user gets an isolated prefix: `users/{email}/projects/*.json`
-- AI settings: `users/{email}/settings.json`
-- Local dev still uses `data/` on disk (with legacy path fallback)
+- **users** table — accounts (email, password hash)
+- **documents** table — JSON blobs keyed by path:
+  - `users/{userId}/projects/{id}.json`
+  - `users/{userId}/settings.json`
+- Local dev uses the `data/` folder on disk (same key layout)
+
+OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framework cache).
 
 ## Prerequisites
 
@@ -18,16 +24,35 @@ Browser → Cloudflare Access (login) → Workers (Next.js) → R2 bucket
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) logged in: `npx wrangler login`
 - Node.js 20+
 
-## 1. Create R2 buckets
+## 1. Create the D1 database
 
 ```bash
-npx wrangler r2 bucket create chaptercraft-data
-npx wrangler r2 bucket create chaptercraft-cache
+npx wrangler d1 create chaptercraft-db
 ```
 
-Bucket names must match `wrangler.jsonc` (`chaptercraft-data`, `chaptercraft-cache`).
+Copy the `database_id` into `wrangler.jsonc` (replace the placeholder).
 
-## 2. Deploy the Worker
+Apply migrations:
+
+```bash
+npx wrangler d1 migrations apply chaptercraft-db --remote
+```
+
+For local Wrangler preview:
+
+```bash
+npx wrangler d1 migrations apply chaptercraft-db --local
+```
+
+## 2. Set secrets
+
+```bash
+npx wrangler secret put AUTH_SECRET
+```
+
+Use a long random string (32+ characters). Required in production for session signing.
+
+## 3. Deploy the Worker
 
 ```bash
 npm install
@@ -40,46 +65,15 @@ First deploy prints your `*.workers.dev` URL (e.g. `https://chaptercraft.<subdom
 
 In Cloudflare dashboard → Workers & Pages → chaptercraft → Settings → Domains → add e.g. `chaptercraft.example.com`.
 
-## 3. Cloudflare Access (required for production)
+## 4. Migrate local data to D1 (optional)
 
-**Do not expose the app publicly without Access** — it stores manuscripts and API keys.
+If you have existing projects in `data/`:
 
-1. Dashboard → **Zero Trust** → **Access** → **Applications** → **Add application**
-2. Type: **Self-hosted**
-3. Application domain: your Worker URL or custom domain (e.g. `chaptercraft.example.com`)
-4. Policy: **Allow** → Include → **Emails** → your email address(es)
-5. Save
-
-Access injects the header `Cf-Access-Authenticated-User-Email`, used to scope R2 data per user.
-
-### Testing Access
-
-Visit your app URL — you should see the Cloudflare login page first, then ChapterCraft.
-
-## 4. Migrate local data to R2 (optional)
-
-If you have existing projects in `data/projects/`:
+1. Sign up on the deployed app (or note your user id from `data/auth/users.json` in local dev).
+2. Run:
 
 ```bash
-# Set your email to match your Access policy
-export STORAGE_USER_ID="you@example.com"
-
-# Upload each project (example)
-npx wrangler r2 object put chaptercraft-data/users/you@example.com/projects/PROJECT_ID.json \
-  --file=data/projects/PROJECT_ID.json \
-  --content-type=application/json
-
-# Upload settings
-npx wrangler r2 object put chaptercraft-data/users/you@example.com/settings.json \
-  --file=data/settings.json \
-  --content-type=application/json
-```
-
-Or use the helper script:
-
-```bash
-chmod +x scripts/upload-local-to-r2.sh
-STORAGE_USER_ID=you@example.com ./scripts/upload-local-to-r2.sh
+node scripts/upload-local-to-d1.mjs YOUR_USER_ID --remote
 ```
 
 ## 5. Local development
@@ -90,15 +84,15 @@ STORAGE_USER_ID=you@example.com ./scripts/upload-local-to-r2.sh
 npm run dev
 ```
 
-Data stays in `data/` — no R2 needed.
+Data stays in `data/` — no D1 needed.
 
-### With R2 bindings ( closer to production )
+### With D1 bindings (closer to production)
 
 ```bash
 npm run preview
 ```
 
-Uses Wrangler local R2 emulation on `http://localhost:8787`.
+Uses Wrangler local D1 emulation on `http://localhost:8787`.
 
 ## 6. CI/CD (GitHub)
 
@@ -111,24 +105,36 @@ Connect your repo in Cloudflare dashboard:
 
 Or use `npm run deploy` from CLI.
 
-## 7. Secrets (optional)
+## 7. Optional API key secrets
 
-Store sensitive defaults as Worker secrets instead of R2 settings:
+Store sensitive defaults as Worker secrets instead of per-user settings:
 
 ```bash
 npx wrangler secret put OPENAI_API_KEY
 npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
+## D1 limits to know
+
+| Limit | Value |
+|-------|--------|
+| Free tier | 5 GB storage, 5M reads/day, 100K writes/day |
+| Max row size | ~2 MB per document |
+
+A typical book project JSON is well under 1 MB. Very large manuscripts with many long chapters could approach the row limit — split chapters or normalize the schema if needed.
+
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | Worker too large (free plan) | Upgrade to Workers Paid |
-| Empty project list after deploy | Check Access email matches R2 path; migrate data |
-| `DATA_BUCKET` undefined locally | Use `npm run preview` or plain `npm run dev` (filesystem) |
+| Empty project list after deploy | Sign up / log in; migrate data with upload script |
+| `DB` undefined locally | Use `npm run preview` or plain `npm run dev` (filesystem) |
 | Internal Server Error after build | Stop dev server before `npm run build`; use `npm run dev:clean` |
+| Signup fails on preview | Run `wrangler d1 migrations apply chaptercraft-db --local` |
 
-## Why R2 over D1?
+## Why D1 only?
 
-ChapterCraft stores whole project documents as JSON — R2 maps directly to the existing model with minimal migration. D1 would be a good next step for search, multi-user quotas, or analytics.
+- Predictable free-tier quotas (reads/writes), no object-storage egress surprises
+- Single SQLite database for users + projects + settings
+- Simpler ops: one binding, one migration path

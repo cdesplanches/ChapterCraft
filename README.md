@@ -50,9 +50,9 @@ In **Settings**, choose Anthropic and enter your API key (`sk-ant-...`).
 | Environment | Storage |
 |-------------|---------|
 | Local dev (`npm run dev`) | `data/` on disk |
-| Cloudflare Workers | **R2** bucket `chaptercraft-data` |
+| Cloudflare Workers | **D1** (SQLite) — users, projects, settings |
 
-See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (R2, Workers deploy, Access login).
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, Workers deploy, auth).
 
 ## Scripts
 
@@ -60,7 +60,7 @@ See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (R2, 
 |----------------------|------------------------------------------|
 | `npm run dev`        | Local development (filesystem)         |
 | `npm run dev:clean`  | Clear cache and start dev (fixes 500 errors) |
-| `npm run preview`    | Local Workers runtime with R2 bindings   |
+| `npm run preview`    | Local Workers runtime with D1 bindings   |
 | `npm run deploy`     | Build and deploy to Cloudflare Workers |
 | `npm run clean`      | Delete the `.next` build cache           |
 | `npm run build`      | Production build (stop dev first)        |

@@ -20,15 +20,5 @@
       "database_name": "chaptercraft-db",
       "database_id": "00000000-0000-0000-0000-000000000001"
     }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "DATA_BUCKET",
-      "bucket_name": "chaptercraft-data"
-    },
-    {
-      "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      "bucket_name": "chaptercraft-cache"
-    }
   ]
 }
