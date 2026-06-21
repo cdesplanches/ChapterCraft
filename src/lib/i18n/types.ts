@@ -211,6 +211,7 @@ export type Messages = {
     signupFailed: string;
     invalidCredentials: string;
     unauthorized: string;
+    chapterTooLarge: string;
   };
 };
 

@@ -12,8 +12,9 @@ Browser → Workers (Next.js) → D1 (SQLite)
 
 - **users** table — accounts (email, password hash)
 - **documents** table — JSON blobs keyed by path:
-  - `users/{userId}/projects/{id}.json`
-  - `users/{userId}/settings.json`
+  - `users/{userId}/projects/{id}/meta.json` — project metadata
+  - `users/{userId}/projects/{id}/chapters/{chapterId}.json` — one row per chapter
+  - `users/{userId}/settings.json` — AI settings
 - Local dev uses the `data/` folder on disk (same key layout)
 
 OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framework cache).
@@ -22,7 +23,7 @@ OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framewor
 
 - [Cloudflare account](https://dash.cloudflare.com/sign-up) (Workers Paid plan recommended — free tier has 3 MiB Worker size limit)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) logged in: `npx wrangler login`
-- Node.js 20+
+- Node.js 22+ (required by Wrangler 4)
 
 ## 1. Create the D1 database
 
@@ -30,13 +31,40 @@ OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framewor
 npx wrangler d1 create chaptercraft-db
 ```
 
-Copy the `database_id` into `wrangler.jsonc` (replace the placeholder).
+Wrangler prints something like:
 
-Apply migrations:
+```
+✅ Successfully created DB 'chaptercraft-db'
+database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+```
+
+Copy that `database_id` into `wrangler.jsonc` (replace the placeholder), then **commit and push** — see [What to commit vs keep secret](#what-to-commit-vs-keep-secret) below.
+
+Example:
+
+```json
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "chaptercraft-db",
+    "database_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  }
+]
+```
+
+### Is `database_id` a secret?
+
+**No.** The `database_id` is a resource identifier (like a project name), not a credential. It tells Wrangler *which* D1 database to bind — it does **not** grant access on its own. Someone with only the ID cannot read or write your data without a Cloudflare API token that has D1 permissions on your account.
+
+**Safe to commit:** `database_id` in `wrangler.jsonc` (standard practice for Cloudflare Workers projects).
+
+Apply **schema migrations** (creates empty tables — not your book data):
 
 ```bash
 npx wrangler d1 migrations apply chaptercraft-db --remote
 ```
+
+This runs the SQL files in `migrations/` (`users` table, `documents` table). You only need to do this once per database, or again when new migration files are added to the repo.
 
 For local Wrangler preview:
 
@@ -46,11 +74,51 @@ npx wrangler d1 migrations apply chaptercraft-db --local
 
 ## 2. Set secrets
 
+ChapterCraft needs `AUTH_SECRET` in production: a private key used to **sign login cookies**. Without it, sessions cannot be created securely.
+
+### Generate a value
+
 ```bash
-npx wrangler secret put AUTH_SECRET
+openssl rand -hex 32
 ```
 
-Use a long random string (32+ characters). Required in production for session signing.
+Example output (yours will be different):
+
+```
+a3f8c1e92b704d5687f1a0e4c9d2b6e8f0a1c3d5e7b9f2a4c6d8e0f1a3b5c7d9
+```
+
+### Store it on Cloudflare
+
+**Option A — interactive** (Wrangler prompts you to paste the value):
+
+```bash
+npx wrangler secret put AUTH_SECRET
+# Enter a secret value: (paste the string from openssl rand -hex 32)
+```
+
+**Option B — one-liner** (generates and uploads in one step):
+
+```bash
+openssl rand -hex 32 | npx wrangler secret put AUTH_SECRET
+```
+
+The secret is stored encrypted on Cloudflare and injected into your Worker at runtime. It is **not** committed to git and **not** visible in the dashboard after creation.
+
+> **Local dev:** `npm run dev` uses a built-in dev default — you do not need `AUTH_SECRET` on your machine unless you test auth against production-like settings.
+
+## What to commit vs keep secret
+
+| Item | Secret? | Where it lives | Commit to git? |
+|------|---------|----------------|----------------|
+| `database_id` | No | `wrangler.jsonc` | **Yes** |
+| `database_name`, Worker name | No | `wrangler.jsonc` | **Yes** |
+| `CLOUDFLARE_ACCOUNT_ID` | Low sensitivity | GitHub Actions secret (for CI) | Optional in repo; usually kept as GitHub secret only |
+| `CLOUDFLARE_API_TOKEN` | **Yes** | GitHub Actions secret | **Never** |
+| `AUTH_SECRET` | **Yes** | Cloudflare Worker secret (`wrangler secret put`) | **Never** |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | **Yes** | Cloudflare Worker secret or per-user settings | **Never** |
+
+**Rule of thumb:** identifiers and config files (`wrangler.jsonc`) go in the repo; anything that *grants access* stays out of git.
 
 ## 3. Deploy the Worker
 
@@ -65,9 +133,9 @@ First deploy prints your `*.workers.dev` URL (e.g. `https://chaptercraft.<subdom
 
 In Cloudflare dashboard → Workers & Pages → chaptercraft → Settings → Domains → add e.g. `chaptercraft.example.com`.
 
-## 4. Migrate local data to D1 (optional)
+## 4. Copy local projects to D1 (optional)
 
-If you have existing projects in `data/`:
+If you already have book projects in `data/` on your machine and want them on Cloudflare (this is **data** migration, separate from the schema step above):
 
 1. Sign up on the deployed app (or note your user id from `data/auth/users.json` in local dev).
 2. Run:
@@ -94,16 +162,48 @@ npm run preview
 
 Uses Wrangler local D1 emulation on `http://localhost:8787`.
 
-## 6. CI/CD (GitHub)
+## 6. CI/CD (GitHub Actions)
 
-Connect your repo in Cloudflare dashboard:
+Each push to `main` triggers an automatic deploy via [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
+
+### One-time setup
+
+1. **Create a D1 database**, put the real `database_id` in `wrangler.jsonc`, and **commit it** (not a secret — see [What to commit vs keep secret](#what-to-commit-vs-keep-secret)).
+
+2. **Set `AUTH_SECRET` on Cloudflare** (once, not in GitHub):
+   ```bash
+   openssl rand -hex 32 | npx wrangler secret put AUTH_SECRET
+   ```
+
+3. **Create a Cloudflare API token** with these permissions:
+   - Account → **Cloudflare Workers Scripts** → Edit
+   - Account → **D1** → Edit
+   - Account → **Account Settings** → Read (to resolve account)
+
+   Dashboard → My Profile → **API Tokens** → Create Token → use the *Edit Cloudflare Workers* template and add D1 Edit.
+
+4. **Add GitHub repository secrets** (Settings → Secrets and variables → Actions):
+
+   | Secret | Value |
+   |--------|--------|
+   | `CLOUDFLARE_API_TOKEN` | The token from step 3 |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → right column **Account ID** |
+
+5. Push to `main` — the workflow will:
+   - install dependencies
+   - apply D1 schema migrations
+   - build with OpenNext and deploy the Worker
+
+You can also run a deploy manually: GitHub → **Actions** → **Deploy to Cloudflare** → **Run workflow**.
+
+### Alternative: Cloudflare dashboard CI
+
+You can connect the repo in Cloudflare dashboard instead, but GitHub Actions is already configured:
 
 | Setting | Value |
 |---------|--------|
 | Build command | `npm run build` |
 | Deploy command | `npx opennextjs-cloudflare build && npx wrangler deploy` |
-
-Or use `npm run deploy` from CLI.
 
 ## 7. Optional API key secrets
 
@@ -116,12 +216,26 @@ npx wrangler secret put ANTHROPIC_API_KEY
 
 ## D1 limits to know
 
-| Limit | Value |
-|-------|--------|
-| Free tier | 5 GB storage, 5M reads/day, 100K writes/day |
-| Max row size | ~2 MB per document |
+| Limit | Value | Impact on ChapterCraft |
+|-------|--------|-------------------------|
+| Free tier storage | 5 GB total | Plenty for thousands of books |
+| Free tier reads/writes | 5M / 100K per day | Normal editing stays well within |
+| Max row size | ~2 MB per row | One row **per chapter**, not per book |
 
-A typical book project JSON is well under 1 MB. Very large manuscripts with many long chapters could approach the row limit — split chapters or normalize the schema if needed.
+### How large books are stored
+
+Each project is split across several D1 rows:
+
+```
+users/{userId}/projects/{id}/meta.json      ← pitch, synopsis, chapter list (~few KB)
+users/{userId}/projects/{id}/chapters/…     ← one row per chapter
+```
+
+A 500-page novel with 30 chapters might use ~500 KB total, spread over ~31 rows. The 2 MB limit applies to **each chapter individually**, not the whole book.
+
+**Rule of thumb:** one chapter would need ~350,000 words in a single field to hit 2 MB — far beyond a normal chapter. If you ever approach the limit, the app returns a clear error and suggests splitting the chapter.
+
+Old single-file projects (`{id}.json`) are still read; they are automatically converted to the split format on the next save.
 
 ## Troubleshooting
 

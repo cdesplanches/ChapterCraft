@@ -208,5 +208,7 @@ export const fr = {
     signupFailed: "Impossible de créer le compte",
     invalidCredentials: "E-mail ou mot de passe incorrect",
     unauthorized: "Vous devez être connecté",
+    chapterTooLarge:
+      "Ce chapitre est trop volumineux (plus de 2 Mo). Essayez de le diviser en plusieurs chapitres.",
   },
 } satisfies Messages;

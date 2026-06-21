@@ -68,6 +68,8 @@ See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, 
 | `npm run lint`       | ESLint check                             |
 | `npm run typecheck`  | TypeScript check without building        |
 
+Pushes to `main` auto-deploy via GitHub Actions (see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** § CI/CD).
+
 ## Troubleshooting
 
 ### Internal Server Error after code changes

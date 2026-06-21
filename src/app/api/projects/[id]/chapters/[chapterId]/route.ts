@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { updateChapter, deleteChapter } from "@/lib/storage";
+import { storageErrorResponse } from "@/lib/storage-errors";
 
 type RouteParams = {
   params: Promise<{ id: string; chapterId: string }>;
@@ -8,11 +9,17 @@ type RouteParams = {
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { id, chapterId } = await params;
   const body = await request.json();
-  const chapter = await updateChapter(id, chapterId, body);
-  if (!chapter) {
-    return NextResponse.json({ errorKey: "chapterNotFound" }, { status: 404 });
+  try {
+    const chapter = await updateChapter(id, chapterId, body);
+    if (!chapter) {
+      return NextResponse.json({ errorKey: "chapterNotFound" }, { status: 404 });
+    }
+    return NextResponse.json(chapter);
+  } catch (err) {
+    const response = storageErrorResponse(err);
+    if (response) return response;
+    throw err;
   }
-  return NextResponse.json(chapter);
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {

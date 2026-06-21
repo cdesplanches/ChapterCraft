@@ -207,5 +207,7 @@ export const en = {
     signupFailed: "Could not create account",
     invalidCredentials: "Invalid email or password",
     unauthorized: "You must be logged in",
+    chapterTooLarge:
+      "This chapter is too large to save (over 2 MB). Try splitting it into several chapters.",
   },
 } satisfies Messages;

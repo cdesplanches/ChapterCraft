@@ -4,91 +4,28 @@ import {
   Chapter,
   CoherenceReport,
 } from "./types";
-import {
-  getStorageBackend,
-  getStorageUserId,
-  userKey,
-} from "./storage/context";
-import { FsStorageBackend } from "./storage/fs-backend";
+import { getStorageUserId } from "./storage/context";
 import { getGlobalAiConfig } from "./settings-storage";
-
-async function projectsPrefix(userId: string) {
-  return userKey(userId, "projects");
-}
-
-function projectKey(userId: string, id: string) {
-  return userKey(userId, "projects", `${id}.json`);
-}
-
-/** Legacy local path before D1 / multi-user layout */
-function legacyProjectKey(id: string) {
-  return `projects/${id}.json`;
-}
-
-async function readProjectRaw(
-  userId: string,
-  id: string
-): Promise<string | null> {
-  const backend = await getStorageBackend();
-  const key = projectKey(userId, id);
-  let raw = await backend.read(key);
-  if (!raw && backend instanceof FsStorageBackend) {
-    raw = await backend.read(legacyProjectKey(id));
-  }
-  return raw;
-}
+import {
+  deleteChapterFile,
+  deleteProjectFiles,
+  loadManifest,
+  loadProject,
+  listProjectSummaries,
+  saveChapter,
+  saveProject,
+} from "./storage/project-store";
 
 export async function listProjects(): Promise<
   Pick<BookProject, "id" | "title" | "pitch" | "updatedAt" | "chapters">[]
 > {
   const userId = await getStorageUserId();
-  const backend = await getStorageBackend();
-  const prefix = await projectsPrefix(userId);
-
-  let keys = await backend.list(prefix);
-  if (keys.length === 0 && backend instanceof FsStorageBackend) {
-    keys = await backend.list("projects");
-  }
-
-  const projects = await Promise.all(
-    keys
-      .filter((k) => k.endsWith(".json"))
-      .map(async (k) => {
-        const id = k.split("/").pop()?.replace(".json", "") ?? "";
-        const raw = await readProjectRaw(userId, id);
-        if (!raw) return null;
-        const project = JSON.parse(raw) as BookProject;
-        return {
-          id: project.id,
-          title: project.title,
-          pitch: project.pitch,
-          updatedAt: project.updatedAt,
-          chapters: project.chapters,
-        };
-      })
-  );
-
-  return projects
-    .filter((p): p is NonNullable<typeof p> => p !== null)
-    .sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+  return listProjectSummaries(userId);
 }
 
 export async function getProject(id: string): Promise<BookProject | null> {
   const userId = await getStorageUserId();
-  const raw = await readProjectRaw(userId, id);
-  if (!raw) return null;
-  return JSON.parse(raw) as BookProject;
-}
-
-async function writeProject(userId: string, project: BookProject) {
-  const backend = await getStorageBackend();
-  await backend.write(
-    projectKey(userId, project.id),
-    JSON.stringify(project, null, 2)
-  );
+  return loadProject(userId, id);
 }
 
 export async function createProject(
@@ -110,7 +47,7 @@ export async function createProject(
     createdAt: now,
     updatedAt: now,
   };
-  await writeProject(userId, project);
+  await saveProject(userId, project);
   return project;
 }
 
@@ -124,7 +61,7 @@ export async function updateProject(
   >
 ): Promise<BookProject | null> {
   const userId = await getStorageUserId();
-  const project = await getProject(id);
+  const project = await loadProject(userId, id);
   if (!project) return null;
 
   const updated: BookProject = {
@@ -135,14 +72,13 @@ export async function updateProject(
       : project.aiConfig,
     updatedAt: new Date().toISOString(),
   };
-  await writeProject(userId, updated);
+  await saveProject(userId, updated);
   return updated;
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
   const userId = await getStorageUserId();
-  const backend = await getStorageBackend();
-  return backend.delete(projectKey(userId, id));
+  return deleteProjectFiles(userId, id);
 }
 
 export async function addChapter(
@@ -150,13 +86,13 @@ export async function addChapter(
   data: Pick<Chapter, "title" | "outline">
 ): Promise<Chapter | null> {
   const userId = await getStorageUserId();
-  const project = await getProject(projectId);
-  if (!project) return null;
+  const manifest = await loadManifest(userId, projectId);
+  if (!manifest) return null;
 
   const now = new Date().toISOString();
   const chapter: Chapter = {
     id: uuidv4(),
-    number: project.chapters.length + 1,
+    number: manifest.chapters.length + 1,
     title: data.title,
     outline: data.outline,
     content: "",
@@ -165,9 +101,7 @@ export async function addChapter(
     updatedAt: now,
   };
 
-  project.chapters.push(chapter);
-  project.updatedAt = now;
-  await writeProject(userId, project);
+  await saveChapter(userId, projectId, chapter, manifest);
   return chapter;
 }
 
@@ -177,20 +111,21 @@ export async function updateChapter(
   updates: Partial<Omit<Chapter, "id" | "number">>
 ): Promise<Chapter | null> {
   const userId = await getStorageUserId();
-  const project = await getProject(projectId);
+  const project = await loadProject(userId, projectId);
   if (!project) return null;
 
   const idx = project.chapters.findIndex((c) => c.id === chapterId);
   if (idx === -1) return null;
 
-  project.chapters[idx] = {
+  const chapter: Chapter = {
     ...project.chapters[idx],
     ...updates,
     updatedAt: new Date().toISOString(),
   };
-  project.updatedAt = new Date().toISOString();
-  await writeProject(userId, project);
-  return project.chapters[idx];
+
+  const manifest = (await loadManifest(userId, projectId))!;
+  await saveChapter(userId, projectId, chapter, manifest);
+  return chapter;
 }
 
 export async function deleteChapter(
@@ -198,14 +133,16 @@ export async function deleteChapter(
   chapterId: string
 ): Promise<boolean> {
   const userId = await getStorageUserId();
-  const project = await getProject(projectId);
+  const project = await loadProject(userId, projectId);
   if (!project) return false;
 
   project.chapters = project.chapters
     .filter((c) => c.id !== chapterId)
     .map((c, i) => ({ ...c, number: i + 1 }));
   project.updatedAt = new Date().toISOString();
-  await writeProject(userId, project);
+
+  await deleteChapterFile(userId, projectId, chapterId);
+  await saveProject(userId, project);
   return true;
 }
 
@@ -214,7 +151,7 @@ export async function addCoherenceReport(
   report: Omit<CoherenceReport, "id" | "createdAt">
 ): Promise<CoherenceReport | null> {
   const userId = await getStorageUserId();
-  const project = await getProject(projectId);
+  const project = await loadProject(userId, projectId);
   if (!project) return null;
 
   const full: CoherenceReport = {
@@ -227,6 +164,8 @@ export async function addCoherenceReport(
     project.coherenceReports = project.coherenceReports.slice(0, 10);
   }
   project.updatedAt = new Date().toISOString();
-  await writeProject(userId, project);
+  await saveProject(userId, project);
   return full;
 }
+
+export { DocumentTooLargeError } from "./storage/project-store";

@@ -38,13 +38,41 @@ export class FsStorageBackend implements StorageBackend {
     }
   }
 
-  async list(prefix: string): Promise<string[]> {
-    const dir = this.filePath(prefix);
+  /** Remove a directory and all nested files (project folder). */
+  async deleteTree(key: string): Promise<boolean> {
     try {
-      const entries = await fs.readdir(dir);
-      return entries.map((name) => `${prefix}/${name}`);
+      await fs.rm(this.filePath(key), { recursive: true, force: true });
+      return true;
     } catch {
-      return [];
+      return false;
     }
+  }
+
+  async list(prefix: string): Promise<string[]> {
+    const keys: string[] = [];
+    const base = this.filePath(prefix);
+
+    const walk = async (absDir: string, relSuffix: string) => {
+      let entries;
+      try {
+        entries = await fs.readdir(absDir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
+      for (const entry of entries) {
+        const childSuffix = relSuffix ? `${relSuffix}/${entry.name}` : entry.name;
+        const key = `${prefix}/${childSuffix}`;
+        if (entry.isDirectory()) {
+          keys.push(key);
+          await walk(path.join(absDir, entry.name), childSuffix);
+        } else if (entry.isFile()) {
+          keys.push(key);
+        }
+      }
+    };
+
+    await walk(base, "");
+    return keys;
   }
 }
