@@ -208,5 +208,7 @@ export const es = {
     signupFailed: "No se pudo crear la cuenta",
     invalidCredentials: "Correo o contraseña incorrectos",
     unauthorized: "Debes iniciar sesión",
+    chapterTooLarge:
+      "Este capítulo es demasiado grande (más de 2 MB). Intenta dividirlo en varios capítulos.",
   },
 } satisfies Messages;
