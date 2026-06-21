@@ -23,7 +23,7 @@ OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framewor
 
 - [Cloudflare account](https://dash.cloudflare.com/sign-up) (Workers Paid plan recommended — free tier has 3 MiB Worker size limit)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) logged in: `npx wrangler login`
-- Node.js 20+
+- Node.js 22+ (required by Wrangler 4)
 
 ## 1. Create the D1 database
 
@@ -31,7 +31,32 @@ OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framewor
 npx wrangler d1 create chaptercraft-db
 ```
 
-Copy the `database_id` into `wrangler.jsonc` (replace the placeholder).
+Wrangler prints something like:
+
+```
+✅ Successfully created DB 'chaptercraft-db'
+database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+```
+
+Copy that `database_id` into `wrangler.jsonc` (replace the placeholder), then **commit and push** — see [What to commit vs keep secret](#what-to-commit-vs-keep-secret) below.
+
+Example:
+
+```json
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "chaptercraft-db",
+    "database_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  }
+]
+```
+
+### Is `database_id` a secret?
+
+**No.** The `database_id` is a resource identifier (like a project name), not a credential. It tells Wrangler *which* D1 database to bind — it does **not** grant access on its own. Someone with only the ID cannot read or write your data without a Cloudflare API token that has D1 permissions on your account.
+
+**Safe to commit:** `database_id` in `wrangler.jsonc` (standard practice for Cloudflare Workers projects).
 
 Apply **schema migrations** (creates empty tables — not your book data):
 
@@ -82,6 +107,19 @@ The secret is stored encrypted on Cloudflare and injected into your Worker at ru
 
 > **Local dev:** `npm run dev` uses a built-in dev default — you do not need `AUTH_SECRET` on your machine unless you test auth against production-like settings.
 
+## What to commit vs keep secret
+
+| Item | Secret? | Where it lives | Commit to git? |
+|------|---------|----------------|----------------|
+| `database_id` | No | `wrangler.jsonc` | **Yes** |
+| `database_name`, Worker name | No | `wrangler.jsonc` | **Yes** |
+| `CLOUDFLARE_ACCOUNT_ID` | Low sensitivity | GitHub Actions secret (for CI) | Optional in repo; usually kept as GitHub secret only |
+| `CLOUDFLARE_API_TOKEN` | **Yes** | GitHub Actions secret | **Never** |
+| `AUTH_SECRET` | **Yes** | Cloudflare Worker secret (`wrangler secret put`) | **Never** |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | **Yes** | Cloudflare Worker secret or per-user settings | **Never** |
+
+**Rule of thumb:** identifiers and config files (`wrangler.jsonc`) go in the repo; anything that *grants access* stays out of git.
+
 ## 3. Deploy the Worker
 
 ```bash
@@ -130,7 +168,7 @@ Each push to `main` triggers an automatic deploy via [`.github/workflows/deploy.
 
 ### One-time setup
 
-1. **Create a D1 database** and put the real `database_id` in `wrangler.jsonc` (see step 1 above).
+1. **Create a D1 database**, put the real `database_id` in `wrangler.jsonc`, and **commit it** (not a secret — see [What to commit vs keep secret](#what-to-commit-vs-keep-secret)).
 
 2. **Set `AUTH_SECRET` on Cloudflare** (once, not in GitHub):
    ```bash
