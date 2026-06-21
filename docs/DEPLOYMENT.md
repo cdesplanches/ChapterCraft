@@ -124,16 +124,48 @@ npm run preview
 
 Uses Wrangler local D1 emulation on `http://localhost:8787`.
 
-## 6. CI/CD (GitHub)
+## 6. CI/CD (GitHub Actions)
 
-Connect your repo in Cloudflare dashboard:
+Each push to `main` triggers an automatic deploy via [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
+
+### One-time setup
+
+1. **Create a D1 database** and put the real `database_id` in `wrangler.jsonc` (see step 1 above).
+
+2. **Set `AUTH_SECRET` on Cloudflare** (once, not in GitHub):
+   ```bash
+   openssl rand -hex 32 | npx wrangler secret put AUTH_SECRET
+   ```
+
+3. **Create a Cloudflare API token** with these permissions:
+   - Account → **Cloudflare Workers Scripts** → Edit
+   - Account → **D1** → Edit
+   - Account → **Account Settings** → Read (to resolve account)
+
+   Dashboard → My Profile → **API Tokens** → Create Token → use the *Edit Cloudflare Workers* template and add D1 Edit.
+
+4. **Add GitHub repository secrets** (Settings → Secrets and variables → Actions):
+
+   | Secret | Value |
+   |--------|--------|
+   | `CLOUDFLARE_API_TOKEN` | The token from step 3 |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → right column **Account ID** |
+
+5. Push to `main` — the workflow will:
+   - install dependencies
+   - apply D1 schema migrations
+   - build with OpenNext and deploy the Worker
+
+You can also run a deploy manually: GitHub → **Actions** → **Deploy to Cloudflare** → **Run workflow**.
+
+### Alternative: Cloudflare dashboard CI
+
+You can connect the repo in Cloudflare dashboard instead, but GitHub Actions is already configured:
 
 | Setting | Value |
 |---------|--------|
 | Build command | `npm run build` |
 | Deploy command | `npx opennextjs-cloudflare build && npx wrangler deploy` |
-
-Or use `npm run deploy` from CLI.
 
 ## 7. Optional API key secrets
 
