@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   if (!title?.trim() || !pitch?.trim()) {
     return NextResponse.json(
-      { error: "Le titre et le pitch sont requis" },
+      { errorKey: "titleAndPitchRequired" },
       { status: 400 }
     );
   }

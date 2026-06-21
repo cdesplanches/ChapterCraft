@@ -1,27 +1,36 @@
 import { NextResponse } from "next/server";
 import { getProject, addCoherenceReport } from "@/lib/storage";
+import { getGlobalAiConfig } from "@/lib/settings-storage";
+import { mergeAiConfig } from "@/lib/ai-config";
 import { runAIAction } from "@/lib/ai/actions";
 import { AIAction } from "@/lib/types";
+import { DEFAULT_LOCALE, Locale } from "@/lib/i18n/types";
+
+function parseLocale(value: unknown): Locale {
+  if (value === "en" || value === "fr" || value === "es") return value;
+  return DEFAULT_LOCALE;
+}
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { action, projectId, chapterId, userPrompt } = body as {
+  const { action, projectId, chapterId, userPrompt, locale } = body as {
     action: AIAction;
     projectId: string;
     chapterId?: string;
     userPrompt?: string;
+    locale?: Locale;
   };
 
   if (!action || !projectId) {
     return NextResponse.json(
-      { error: "action et projectId sont requis" },
+      { errorKey: "actionAndProjectRequired" },
       { status: 400 }
     );
   }
 
   const project = await getProject(projectId);
   if (!project) {
-    return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
+    return NextResponse.json({ errorKey: "projectNotFound" }, { status: 404 });
   }
 
   const chapter = chapterId
@@ -29,10 +38,7 @@ export async function POST(request: Request) {
     : undefined;
 
   if (chapterId && !chapter) {
-    return NextResponse.json(
-      { error: "Chapitre introuvable" },
-      { status: 404 }
-    );
+    return NextResponse.json({ errorKey: "chapterNotFound" }, { status: 404 });
   }
 
   const chapterRequired: AIAction[] = [
@@ -43,14 +49,23 @@ export async function POST(request: Request) {
     "suggest-improvements",
   ];
   if (chapterRequired.includes(action) && !chapter) {
-    return NextResponse.json(
-      { error: "chapterId requis pour cette action" },
-      { status: 400 }
-    );
+    return NextResponse.json({ errorKey: "chapterIdRequired" }, { status: 400 });
   }
 
   try {
-    const result = await runAIAction(project, action, chapter, userPrompt);
+    const globalConfig = await getGlobalAiConfig();
+    const projectForAi = {
+      ...project,
+      aiConfig: mergeAiConfig(project.aiConfig, globalConfig),
+    };
+
+    const result = await runAIAction(
+      projectForAi,
+      action,
+      parseLocale(locale),
+      chapter,
+      userPrompt
+    );
 
     if (action === "check-coherence" && result.coherenceReport) {
       const report = await addCoherenceReport(projectId, result.coherenceReport);
@@ -59,7 +74,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erreur IA";
-    return NextResponse.json({ error: message }, { status: 502 });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message, errorKey: "aiError" }, { status: 502 });
   }
 }

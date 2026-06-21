@@ -11,6 +11,8 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+/.wrangler/
 
 # production
 /build
@@ -26,10 +28,12 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+.dev.vars
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+cloudflare-env.d.ts
 
-# chaptercraft data (user projects — keep local)
+# chaptercraft data (local dev — cloud uses R2)
 /data/

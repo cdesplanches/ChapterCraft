@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Chapter, CHAPTER_STATUS_LABELS, ChapterStatus } from "@/lib/types";
+import { Chapter, ChapterStatus } from "@/lib/types";
 import { Button } from "./Button";
 import { Input, Textarea, Select } from "./FormFields";
+import { useLocale } from "@/contexts/LocaleContext";
+import { resolveApiError } from "@/lib/api-error";
 
 interface ChapterEditorProps {
   chapter: Chapter;
@@ -19,12 +21,16 @@ type AIActionKey =
   | "revise"
   | "suggest-improvements";
 
-const AI_ACTIONS: { key: AIActionKey; label: string; target: "outline" | "content" | "none" }[] = [
-  { key: "generate-outline", label: "Générer le plan", target: "outline" },
-  { key: "expand-outline", label: "Enrichir le plan", target: "outline" },
-  { key: "write-draft", label: "Rédiger le brouillon", target: "content" },
-  { key: "revise", label: "Réviser", target: "content" },
-  { key: "suggest-improvements", label: "Suggestions", target: "none" },
+const AI_ACTION_KEYS: {
+  key: AIActionKey;
+  labelKey: string;
+  target: "outline" | "content" | "none";
+}[] = [
+  { key: "generate-outline", labelKey: "aiActions.generateOutline", target: "outline" },
+  { key: "expand-outline", labelKey: "aiActions.expandOutline", target: "outline" },
+  { key: "write-draft", labelKey: "aiActions.writeDraft", target: "content" },
+  { key: "revise", labelKey: "aiActions.revise", target: "content" },
+  { key: "suggest-improvements", labelKey: "aiActions.suggestImprovements", target: "none" },
 ];
 
 export function ChapterEditor({
@@ -33,11 +39,19 @@ export function ChapterEditor({
   onUpdate,
   onDelete,
 }: ChapterEditorProps) {
+  const { t, te, locale } = useLocale();
   const [local, setLocal] = useState(chapter);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResult, setAiResult] = useState("");
+
+  const statusOptions = (
+    ["outline", "draft", "revision", "done"] as ChapterStatus[]
+  ).map((value) => ({
+    value,
+    label: t(`chapterStatus.${value}`),
+  }));
 
   async function save(updates: Partial<Chapter>) {
     setSaving(true);
@@ -68,16 +82,17 @@ export function ChapterEditor({
         projectId,
         chapterId: chapter.id,
         userPrompt: aiPrompt || undefined,
+        locale,
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      setAiResult(`Erreur : ${data.error}`);
+      setAiResult(`${t("chapter.errorPrefix")} ${resolveApiError(data, te)}`);
       setAiLoading(null);
       return;
     }
 
-    const actionMeta = AI_ACTIONS.find((a) => a.key === action);
+    const actionMeta = AI_ACTION_KEYS.find((a) => a.key === action);
     if (actionMeta?.target === "outline") {
       await save({ outline: data.content });
       setAiResult("");
@@ -95,32 +110,29 @@ export function ChapterEditor({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-4">
           <Input
-            label="Titre"
+            label={t("chapter.title")}
             value={local.title}
             onChange={(e) => setLocal({ ...local, title: e.target.value })}
             onBlur={() => local.title !== chapter.title && save({ title: local.title })}
           />
           <Select
-            label="Statut"
+            label={t("chapter.status")}
             value={local.status}
             onChange={(e) => {
               const status = e.target.value as ChapterStatus;
               setLocal({ ...local, status });
               save({ status });
             }}
-            options={Object.entries(CHAPTER_STATUS_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
+            options={statusOptions}
           />
         </div>
         <Button variant="danger" size="sm" onClick={onDelete}>
-          Supprimer
+          {t("common.delete")}
         </Button>
       </div>
 
       <Textarea
-        label="Plan du chapitre"
+        label={t("chapter.outline")}
         value={local.outline}
         onChange={(e) => setLocal({ ...local, outline: e.target.value })}
         onBlur={() => local.outline !== chapter.outline && save({ outline: local.outline })}
@@ -129,35 +141,35 @@ export function ChapterEditor({
       />
 
       <Textarea
-        label="Contenu"
+        label={t("chapter.content")}
         value={local.content}
         onChange={(e) => setLocal({ ...local, content: e.target.value })}
         onBlur={() => local.content !== chapter.content && save({ content: local.content })}
         rows={20}
         className="leading-relaxed"
-        placeholder="Rédigez ou générez le contenu de votre chapitre..."
+        placeholder={t("chapter.contentPlaceholder")}
       />
 
       <Textarea
-        label="Notes (privées)"
+        label={t("chapter.notes")}
         value={local.notes}
         onChange={(e) => setLocal({ ...local, notes: e.target.value })}
         onBlur={() => local.notes !== chapter.notes && save({ notes: local.notes })}
         rows={3}
-        placeholder="Notes pour vous-même..."
+        placeholder={t("chapter.notesPlaceholder")}
       />
 
       <div className="border-t border-border pt-6 space-y-4">
-        <h4 className="font-medium text-sm">Assistance IA</h4>
+        <h4 className="font-medium text-sm">{t("chapter.aiAssist")}</h4>
         <Textarea
-          label="Instructions optionnelles"
+          label={t("chapter.optionalInstructions")}
           value={aiPrompt}
           onChange={(e) => setAiPrompt(e.target.value)}
           rows={2}
-          placeholder="Ex : accentuer le suspense, développer le personnage de Marie..."
+          placeholder={t("chapter.instructionsPlaceholder")}
         />
         <div className="flex flex-wrap gap-2">
-          {AI_ACTIONS.map((action) => (
+          {AI_ACTION_KEYS.map((action) => (
             <Button
               key={action.key}
               variant="secondary"
@@ -166,7 +178,7 @@ export function ChapterEditor({
               disabled={!!aiLoading}
               onClick={() => runAI(action.key)}
             >
-              {action.label}
+              {t(action.labelKey)}
             </Button>
           ))}
         </div>
@@ -177,9 +189,7 @@ export function ChapterEditor({
         )}
       </div>
 
-      {saving && (
-        <p className="text-xs text-muted">Enregistrement…</p>
-      )}
+      {saving && <p className="text-xs text-muted">{t("common.saving")}</p>}
     </div>
   );
 }

@@ -83,10 +83,3 @@ export const DEFAULT_AI_CONFIG: AIProviderConfig = {
   openaiModel: "gpt-4o",
   anthropicModel: "claude-sonnet-4-20250514",
 };
-
-export const CHAPTER_STATUS_LABELS: Record<ChapterStatus, string> = {
-  outline: "Plan",
-  draft: "Brouillon",
-  revision: "Révision",
-  done: "Terminé",
-};

@@ -1,6 +1,7 @@
 "use client";
 
 import { CoherenceReport } from "@/lib/types";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface CoherencePanelProps {
   reports: CoherenceReport[];
@@ -20,25 +21,24 @@ function severityColor(severity: string) {
 }
 
 export function CoherencePanel({ reports, onCheck, loading }: CoherencePanelProps) {
+  const { t, dateLocale } = useLocale();
   const latest = reports[0];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Cohérence narrative</h3>
+        <h3 className="font-medium">{t("coherence.title")}</h3>
         <button
           onClick={onCheck}
           disabled={loading}
           className="text-sm text-accent hover:underline disabled:opacity-50"
         >
-          {loading ? "Analyse en cours…" : "Analyser"}
+          {loading ? t("coherence.analyzing") : t("coherence.analyze")}
         </button>
       </div>
 
       {!latest ? (
-        <p className="text-sm text-muted">
-          Lancez une analyse pour vérifier la cohérence de votre livre par rapport au pitch et entre les chapitres.
-        </p>
+        <p className="text-sm text-muted">{t("coherence.emptyDescription")}</p>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-4">
@@ -54,14 +54,14 @@ export function CoherencePanel({ reports, onCheck, loading }: CoherencePanelProp
               {latest.score}
             </div>
             <div>
-              <p className="text-sm font-medium">Score de cohérence</p>
+              <p className="text-sm font-medium">{t("coherence.score")}</p>
               <p className="text-sm text-muted mt-1">{latest.summary}</p>
             </div>
           </div>
 
           {latest.issues.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Problèmes détectés</p>
+              <p className="text-sm font-medium">{t("coherence.issues")}</p>
               {latest.issues.map((issue, i) => (
                 <div
                   key={i}
@@ -78,7 +78,7 @@ export function CoherencePanel({ reports, onCheck, loading }: CoherencePanelProp
 
           {latest.suggestions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Suggestions</p>
+              <p className="text-sm font-medium">{t("coherence.suggestions")}</p>
               <ul className="text-sm text-muted space-y-1 list-disc list-inside">
                 {latest.suggestions.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -88,7 +88,9 @@ export function CoherencePanel({ reports, onCheck, loading }: CoherencePanelProp
           )}
 
           <p className="text-xs text-muted">
-            Dernière analyse : {new Date(latest.createdAt).toLocaleString("fr-FR")}
+            {t("coherence.lastAnalysis", {
+              date: new Date(latest.createdAt).toLocaleString(dateLocale),
+            })}
           </p>
         </div>
       )}

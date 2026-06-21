@@ -1,4 +1,7 @@
 import { AIProviderConfig } from "../types";
+import { Locale, DEFAULT_LOCALE } from "../i18n/types";
+import { TEST_PROMPTS } from "./prompts";
+import { normalizeOllamaUrl } from "../ai-config";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -23,7 +26,7 @@ export async function chat(
     case "anthropic":
       return chatAnthropic(config, messages, options);
     default:
-      throw new Error(`Provider inconnu: ${config.type}`);
+      throw new Error(`Unknown provider: ${config.type}`);
   }
 }
 
@@ -32,7 +35,7 @@ async function chatOllama(
   messages: ChatMessage[],
   options: LLMOptions
 ): Promise<string> {
-  const baseUrl = config.ollamaBaseUrl ?? "http://localhost:11434";
+  const baseUrl = normalizeOllamaUrl(config.ollamaBaseUrl);
   const model = config.ollamaModel ?? "llama3.2";
 
   const res = await fetch(`${baseUrl}/api/chat`, {
@@ -64,7 +67,7 @@ async function chatOpenAI(
   options: LLMOptions
 ): Promise<string> {
   if (!config.openaiApiKey) {
-    throw new Error("Clé API OpenAI non configurée");
+    throw new Error("OPENAI_KEY_MISSING");
   }
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -98,7 +101,7 @@ async function chatAnthropic(
   options: LLMOptions
 ): Promise<string> {
   if (!config.anthropicApiKey) {
-    throw new Error("Clé API Anthropic non configurée");
+    throw new Error("ANTHROPIC_KEY_MISSING");
   }
 
   const systemMessage = messages.find((m) => m.role === "system");
@@ -135,27 +138,24 @@ async function chatAnthropic(
 }
 
 export async function testConnection(
-  config: AIProviderConfig
-): Promise<{ ok: boolean; message: string }> {
+  config: AIProviderConfig,
+  locale: Locale = DEFAULT_LOCALE
+): Promise<{ ok: boolean; message?: string; messageKey?: "connectionSuccess" }> {
   try {
     const response = await chat(
       config,
-      [
-        {
-          role: "user",
-          content: 'Réponds uniquement par le mot "OK".',
-        },
-      ],
+      [{ role: "user", content: TEST_PROMPTS[locale] }],
       { maxTokens: 10, temperature: 0 }
     );
     return {
       ok: true,
-      message: response.trim() || "Connexion réussie",
+      message: response.trim() || undefined,
+      messageKey: "connectionSuccess",
     };
   } catch (err) {
     return {
       ok: false,
-      message: err instanceof Error ? err.message : "Erreur inconnue",
+      message: err instanceof Error ? err.message : "Unknown error",
     };
   }
 }
@@ -164,7 +164,8 @@ export async function listOllamaModels(
   baseUrl: string
 ): Promise<string[]> {
   try {
-    const res = await fetch(`${baseUrl}/api/tags`);
+    const url = normalizeOllamaUrl(baseUrl);
+    const res = await fetch(`${url}/api/tags`);
     if (!res.ok) return [];
     const data = (await res.json()) as {
       models?: { name: string }[];

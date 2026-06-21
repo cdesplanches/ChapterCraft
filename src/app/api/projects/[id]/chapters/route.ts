@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   if (!title?.trim()) {
     return NextResponse.json(
-      { error: "Le titre du chapitre est requis" },
+      { errorKey: "chapterTitleRequired" },
       { status: 400 }
     );
   }
@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   });
 
   if (!chapter) {
-    return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
+    return NextResponse.json({ errorKey: "projectNotFound" }, { status: 404 });
   }
 
   return NextResponse.json(chapter, { status: 201 });
