@@ -1,24 +1,28 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "chaptercraft",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2025-05-05",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-  "services": [
-    {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "chaptercraft"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "chaptercraft-db",
-      "database_id": "00000000-0000-0000-0000-000000000001"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "chaptercraft",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-05-05",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "chaptercraft"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "chaptercraft-db",
+			"database_id": "43cd6531-269e-470c-a58e-081da42598c2",
+			"remote": true
+		}
+	]
 }
