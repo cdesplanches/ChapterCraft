@@ -76,6 +76,14 @@ export const es = {
     addFirstChapter: "Añade tu primer capítulo.",
     selectChapter: "Selecciona o crea un capítulo para empezar.",
     deleteChapterConfirm: "¿Eliminar este capítulo?",
+    deleteProject: "Eliminar proyecto",
+    deleteProjectTitle: "Eliminar proyecto",
+    deleteProjectDescription:
+      "Esta acción eliminará permanentemente el proyecto y todos sus capítulos.",
+    deleteProjectInstruction: "Escribe delete para confirmar.",
+    deleteProjectInputLabel: "Confirmación",
+    deleteProjectInputPlaceholder: "delete",
+    deleteProjectError: "No se pudo eliminar el proyecto.",
     aiSettingsTitle: "Configuración de IA",
     aiSettingsDescription:
       "Elige tu proveedor: Ollama local o una clave API en la nube. Las claves se guardan localmente en tu proyecto.",

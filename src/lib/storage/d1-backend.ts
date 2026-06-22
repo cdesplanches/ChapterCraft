@@ -58,8 +58,8 @@ export class D1StorageBackend implements StorageBackend {
   async list(prefix: string): Promise<string[]> {
     await this.ready();
     const result = await this.db
-      .prepare("SELECT key FROM documents WHERE key LIKE ?")
-      .bind(`${prefix}%`)
+      .prepare("SELECT key FROM documents WHERE key >= ? AND key < ?")
+      .bind(prefix, `${prefix}\uffff`)
       .all<{ key: string }>();
     return result.results.map((row) => row.key);
   }

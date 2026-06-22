@@ -25,6 +25,10 @@ export default function ProjectPage() {
   const [coherenceLoading, setCoherenceLoading] = useState(false);
   const [addingChapter, setAddingChapter] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -83,6 +87,26 @@ export default function ProjectPage() {
     await load();
   }
 
+  async function deleteProject() {
+    if (deleteConfirmation !== "delete") return;
+    setDeletingProject(true);
+    setDeleteError(null);
+    const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/");
+      return;
+    }
+    setDeleteError(t("project.deleteProjectError"));
+    setDeletingProject(false);
+  }
+
+  function closeDeleteDialog() {
+    if (deletingProject) return;
+    setDeleteDialogOpen(false);
+    setDeleteConfirmation("");
+    setDeleteError(null);
+  }
+
   async function checkCoherence() {
     setCoherenceLoading(true);
     const res = await fetch("/api/ai", {
@@ -117,12 +141,24 @@ export default function ProjectPage() {
     <>
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-6">
-        <div className="mb-6">
-          <Link href="/" className="text-sm text-muted hover:text-accent">
-            {t("project.backToProjects")}
-          </Link>
-          <h2 className="text-2xl font-semibold mt-2">{project.title}</h2>
-          <p className="text-sm text-muted mt-1 line-clamp-1">{project.pitch}</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <Link href="/" className="text-sm text-muted hover:text-accent">
+              {t("project.backToProjects")}
+            </Link>
+            <h2 className="text-2xl font-semibold mt-2 break-words">
+              {project.title}
+            </h2>
+            <p className="text-sm text-muted mt-1 line-clamp-1">{project.pitch}</p>
+          </div>
+          <Button
+            variant="danger"
+            size="sm"
+            className="shrink-0 mt-7"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            {t("project.deleteProject")}
+          </Button>
         </div>
 
         <nav className="flex gap-1 border-b border-border mb-6">
@@ -269,6 +305,58 @@ export default function ProjectPage() {
           </div>
         )}
       </main>
+
+      {deleteDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-project-title"
+        >
+          <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 shadow-xl">
+            <h3 id="delete-project-title" className="text-lg font-semibold">
+              {t("project.deleteProjectTitle")}
+            </h3>
+            <p className="mt-2 text-sm text-muted">
+              {t("project.deleteProjectDescription")}
+            </p>
+            <p className="mt-4 text-sm font-medium">
+              {t("project.deleteProjectInstruction")}
+            </p>
+            <div className="mt-3">
+              <Input
+                label={t("project.deleteProjectInputLabel")}
+                placeholder={t("project.deleteProjectInputPlaceholder")}
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                autoFocus
+              />
+            </div>
+            {deleteError && (
+              <p className="mt-3 text-sm text-red-700">{deleteError}</p>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeDeleteDialog}
+                disabled={deletingProject}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={deleteProject}
+                disabled={deleteConfirmation !== "delete"}
+                loading={deletingProject}
+              >
+                {t("common.delete")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

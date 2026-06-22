@@ -85,6 +85,13 @@ export type Messages = {
     addFirstChapter: string;
     selectChapter: string;
     deleteChapterConfirm: string;
+    deleteProject: string;
+    deleteProjectTitle: string;
+    deleteProjectDescription: string;
+    deleteProjectInstruction: string;
+    deleteProjectInputLabel: string;
+    deleteProjectInputPlaceholder: string;
+    deleteProjectError: string;
     aiSettingsTitle: string;
     aiSettingsDescription: string;
     fields: {

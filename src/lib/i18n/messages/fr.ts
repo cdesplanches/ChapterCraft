@@ -76,6 +76,14 @@ export const fr = {
     addFirstChapter: "Ajoutez votre premier chapitre.",
     selectChapter: "Sélectionnez ou créez un chapitre pour commencer.",
     deleteChapterConfirm: "Supprimer ce chapitre ?",
+    deleteProject: "Supprimer le projet",
+    deleteProjectTitle: "Supprimer le projet",
+    deleteProjectDescription:
+      "Cette action supprimera définitivement le projet et tous ses chapitres.",
+    deleteProjectInstruction: "Tapez delete pour confirmer.",
+    deleteProjectInputLabel: "Confirmation",
+    deleteProjectInputPlaceholder: "delete",
+    deleteProjectError: "Impossible de supprimer le projet.",
     aiSettingsTitle: "Configuration IA",
     aiSettingsDescription:
       "Choisissez votre fournisseur : Ollama en local, ou une clé API cloud. Les clés sont stockées localement dans votre projet.",

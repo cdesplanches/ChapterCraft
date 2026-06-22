@@ -75,6 +75,14 @@ export const en = {
     addFirstChapter: "Add your first chapter.",
     selectChapter: "Select or create a chapter to get started.",
     deleteChapterConfirm: "Delete this chapter?",
+    deleteProject: "Delete project",
+    deleteProjectTitle: "Delete project",
+    deleteProjectDescription:
+      "This will permanently delete the project and all of its chapters.",
+    deleteProjectInstruction: "Type delete to confirm.",
+    deleteProjectInputLabel: "Confirmation",
+    deleteProjectInputPlaceholder: "delete",
+    deleteProjectError: "Could not delete the project.",
     aiSettingsTitle: "AI configuration",
     aiSettingsDescription:
       "Choose your provider: local Ollama, or a cloud API key. Keys are stored locally in your project.",
