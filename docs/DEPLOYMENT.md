@@ -175,19 +175,40 @@ Each push to `main` triggers an automatic deploy via [`.github/workflows/deploy.
    openssl rand -hex 32 | npx wrangler secret put AUTH_SECRET
    ```
 
-3. **Create a Cloudflare API token** with these permissions:
-   - Account → **Cloudflare Workers Scripts** → Edit
-   - Account → **D1** → Edit
-   - Account → **Account Settings** → Read (to resolve account)
+3. **Create a Cloudflare API token** — the *Edit Cloudflare Workers* template alone is **not enough** for D1 migrations.
 
-   Dashboard → My Profile → **API Tokens** → Create Token → use the *Edit Cloudflare Workers* template and add D1 Edit.
+   Use **Create Custom Token** with **all** of these permissions:
+
+   | Permission | Access |
+   |------------|--------|
+   | Account → **D1** | **Edit** |
+   | Account → **Cloudflare Workers Scripts** | **Edit** |
+   | Account → **Account Settings** | **Read** |
+
+   Dashboard → My Profile → **API Tokens** → Create Token → **Create Custom Token**.
+
+   Under **Account Resources**, select the account where you created `chaptercraft-db` (or *All accounts* if you only have one).
+
+   > **Common pitfall:** a Workers-only token deploys the app but fails migrations with error `7403` (*account not authorized*). The message is misleading — it usually means **D1 Edit is missing**, not that the account ID is wrong.
 
 4. **Add GitHub repository secrets** (Settings → Secrets and variables → Actions):
 
    | Secret | Value |
    |--------|--------|
-   | `CLOUDFLARE_API_TOKEN` | The token from step 3 |
-   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → right column **Account ID** |
+   | `CLOUDFLARE_API_TOKEN` | The custom token from step 3 (with **D1 Edit**) |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → right column **Account ID** (32 hex chars — **not** a Zone ID) |
+
+   Paste values without trailing spaces. To test locally before CI:
+
+   ```bash
+   export CLOUDFLARE_API_TOKEN="your-token"
+   export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+   npx wrangler whoami
+   npx wrangler d1 list
+   npx wrangler d1 migrations apply chaptercraft-db --remote
+   ```
+
+   If `whoami` works but `d1 list` fails with `7403`, recreate the token with **D1 → Edit**.
 
 5. Push to `main` — the workflow will:
    - install dependencies
@@ -246,6 +267,9 @@ Old single-file projects (`{id}.json`) are still read; they are automatically co
 | `DB` undefined locally | Use `npm run preview` or plain `npm run dev` (filesystem) |
 | Internal Server Error after build | Stop dev server before `npm run build`; use `npm run dev:clean` |
 | Signup fails on preview | Run `wrangler d1 migrations apply chaptercraft-db --local` |
+| CI fails migrations with `7403` | API token missing **D1 → Edit**; recreate token (see §6). Test with `wrangler d1 list` |
+| CI secrets set but still `7403` | Wrong **Account ID** (Zone ID vs Account ID), or D1 database created on a different account |
+| `whoami` OK, `d1 list` fails | Token has Workers but not D1 — add D1 Edit permission |
 
 ## Why D1 only?
 
