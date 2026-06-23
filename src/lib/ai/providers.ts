@@ -25,6 +25,12 @@ export async function chat(
       return chatOpenAI(config, messages, options);
     case "anthropic":
       return chatAnthropic(config, messages, options);
+    case "gemini":
+      return chatGemini(config, messages, options);
+    case "groq":
+      return chatGroq(config, messages, options);
+    case "openrouter":
+      return chatOpenRouter(config, messages, options);
     default:
       throw new Error(`Unknown provider: ${config.type}`);
   }
@@ -135,6 +141,121 @@ async function chatAnthropic(
     content?: { type: string; text?: string }[];
   };
   return data.content?.find((c) => c.type === "text")?.text ?? "";
+}
+
+async function chatGemini(
+  config: AIProviderConfig,
+  messages: ChatMessage[],
+  options: LLMOptions
+): Promise<string> {
+  if (!config.geminiApiKey) {
+    throw new Error("GEMINI_KEY_MISSING");
+  }
+
+  const systemMessage = messages.find((m) => m.role === "system");
+  const nonSystemMessages = messages.filter((m) => m.role !== "system");
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel ?? "gemini-2.0-flash"}:generateContent?key=${config.geminiApiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: systemMessage?.content
+          ? { parts: [{ text: systemMessage.content }] }
+          : undefined,
+        contents: nonSystemMessages.map((m) => ({
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          temperature: options.temperature ?? 0.7,
+          maxOutputTokens: options.maxTokens ?? 4096,
+        },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini (${res.status}): ${err}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  return (
+    data.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
+  );
+}
+
+async function chatGroq(
+  config: AIProviderConfig,
+  messages: ChatMessage[],
+  options: LLMOptions
+): Promise<string> {
+  if (!config.groqApiKey) {
+    throw new Error("GROQ_KEY_MISSING");
+  }
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.groqApiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.groqModel ?? "mixtral-8x7b-32768",
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Groq (${res.status}): ${err}`);
+  }
+
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function chatOpenRouter(
+  config: AIProviderConfig,
+  messages: ChatMessage[],
+  options: LLMOptions
+): Promise<string> {
+  if (!config.openrouterApiKey) {
+    throw new Error("OPENROUTER_KEY_MISSING");
+  }
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.openrouterApiKey}`,
+      "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "https://chaptercraft.app",
+    },
+    body: JSON.stringify({
+      model: config.openrouterModel ?? "openrouter/auto",
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`OpenRouter (${res.status}): ${err}`);
+  }
+
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  return data.choices?.[0]?.message?.content ?? "";
 }
 
 export async function testConnection(

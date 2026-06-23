@@ -177,6 +177,9 @@ export type Messages = {
     listModels: string;
     openaiKey: string;
     anthropicKey: string;
+    geminiKey: string;
+    groqKey: string;
+    openrouterKey: string;
     testConnection: string;
     connectionSuccess: string;
     activeModel: string;
@@ -190,11 +193,20 @@ export type Messages = {
       openaiHint: string;
       anthropic: string;
       anthropicHint: string;
+      gemini: string;
+      geminiHint: string;
+      groq: string;
+      groqHint: string;
+      openrouter: string;
+      openrouterHint: string;
     };
     providers: {
       ollama: string;
       openai: string;
       anthropic: string;
+      gemini: string;
+      groq: string;
+      openrouter: string;
     };
   };
   errors: {

@@ -65,6 +65,9 @@ export function AISettings({ config, onSave }: AISettingsProps) {
     { value: "ollama", label: t("ai.providers.ollama") },
     { value: "openai", label: t("ai.providers.openai") },
     { value: "anthropic", label: t("ai.providers.anthropic") },
+    { value: "gemini", label: t("ai.providers.gemini") },
+    { value: "groq", label: t("ai.providers.groq") },
+    { value: "openrouter", label: t("ai.providers.openrouter") },
   ];
 
   const loadOllamaModels = useCallback(async () => {
@@ -248,6 +251,72 @@ export function AISettings({ config, onSave }: AISettingsProps) {
             value={local.anthropicModel ?? ""}
             onChange={(e) => setLocal({ ...local, anthropicModel: e.target.value })}
             placeholder="claude-sonnet-4-20250514"
+          />
+        </ProviderSection>
+
+        <ProviderSection
+          title={t("ai.sections.gemini")}
+          hint={t("ai.sections.geminiHint")}
+          active={local.type === "gemini"}
+          activeLabel={t("ai.activeBadge")}
+        >
+          <Input
+            label={t("ai.geminiKey")}
+            type="password"
+            value={local.geminiApiKey ?? ""}
+            onChange={(e) => setLocal({ ...local, geminiApiKey: e.target.value })}
+            placeholder="AIz..."
+            autoComplete="off"
+          />
+          <Input
+            label={t("ai.model")}
+            value={local.geminiModel ?? ""}
+            onChange={(e) => setLocal({ ...local, geminiModel: e.target.value })}
+            placeholder="gemini-2.0-flash"
+          />
+        </ProviderSection>
+
+        <ProviderSection
+          title={t("ai.sections.groq")}
+          hint={t("ai.sections.groqHint")}
+          active={local.type === "groq"}
+          activeLabel={t("ai.activeBadge")}
+        >
+          <Input
+            label={t("ai.groqKey")}
+            type="password"
+            value={local.groqApiKey ?? ""}
+            onChange={(e) => setLocal({ ...local, groqApiKey: e.target.value })}
+            placeholder="gsk_..."
+            autoComplete="off"
+          />
+          <Input
+            label={t("ai.model")}
+            value={local.groqModel ?? ""}
+            onChange={(e) => setLocal({ ...local, groqModel: e.target.value })}
+            placeholder="mixtral-8x7b-32768"
+          />
+        </ProviderSection>
+
+        <ProviderSection
+          title={t("ai.sections.openrouter")}
+          hint={t("ai.sections.openrouterHint")}
+          active={local.type === "openrouter"}
+          activeLabel={t("ai.activeBadge")}
+        >
+          <Input
+            label={t("ai.openrouterKey")}
+            type="password"
+            value={local.openrouterApiKey ?? ""}
+            onChange={(e) => setLocal({ ...local, openrouterApiKey: e.target.value })}
+            placeholder="sk-or-..."
+            autoComplete="off"
+          />
+          <Input
+            label={t("ai.model")}
+            value={local.openrouterModel ?? ""}
+            onChange={(e) => setLocal({ ...local, openrouterModel: e.target.value })}
+            placeholder="openrouter/auto"
           />
         </ProviderSection>
       </div>

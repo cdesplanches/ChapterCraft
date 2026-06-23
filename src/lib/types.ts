@@ -1,4 +1,4 @@
-export type AIProviderType = "ollama" | "openai" | "anthropic";
+export type AIProviderType = "ollama" | "openai" | "anthropic" | "gemini" | "groq" | "openrouter";
 
 export interface AIProviderConfig {
   type: AIProviderType;
@@ -11,6 +11,15 @@ export interface AIProviderConfig {
   /** Anthropic API key */
   anthropicApiKey?: string;
   anthropicModel?: string;
+  /** Google Gemini API key */
+  geminiApiKey?: string;
+  geminiModel?: string;
+  /** Groq API key */
+  groqApiKey?: string;
+  groqModel?: string;
+  /** OpenRouter API key */
+  openrouterApiKey?: string;
+  openrouterModel?: string;
 }
 
 export type ChapterStatus = "outline" | "draft" | "revision" | "done";
@@ -82,4 +91,7 @@ export const DEFAULT_AI_CONFIG: AIProviderConfig = {
   ollamaModel: "llama3.2",
   openaiModel: "gpt-4o",
   anthropicModel: "claude-sonnet-4-20250514",
+  geminiModel: "gemini-2.0-flash",
+  groqModel: "mixtral-8x7b-32768",
+  openrouterModel: "openrouter/auto",
 };

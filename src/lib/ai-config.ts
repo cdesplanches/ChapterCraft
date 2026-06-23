@@ -16,6 +16,12 @@ export function getActiveModelLabel(config: AIProviderConfig): string {
       return config.openaiModel ?? "gpt-4o";
     case "anthropic":
       return config.anthropicModel ?? "claude-sonnet-4-20250514";
+    case "gemini":
+      return config.geminiModel ?? "gemini-2.0-flash";
+    case "groq":
+      return config.groqModel ?? "mixtral-8x7b-32768";
+    case "openrouter":
+      return config.openrouterModel ?? "openrouter/auto";
     default:
       return "—";
   }
