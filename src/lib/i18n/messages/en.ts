@@ -111,12 +111,15 @@ export const en = {
     outline: "Chapter outline",
     content: "Content",
     contentPlaceholder: "Write or generate your chapter content…",
+    formatContent: "Reformat",
     notes: "Notes (private)",
     notesPlaceholder: "Notes for yourself…",
     aiAssist: "AI assistance",
     optionalInstructions: "Optional instructions",
     instructionsPlaceholder:
       "E.g. increase suspense, develop Marie's character…",
+    sendAiPrompt: "Run AI",
+    applyAiResult: "Apply response",
     errorPrefix: "Error:",
   },
   chapterStatus: {

@@ -24,16 +24,20 @@ export function Input({ label, className = "", id, ...props }: InputProps) {
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
+  labelAction?: React.ReactNode;
 }
 
-export function Textarea({ label, className = "", id, ...props }: TextareaProps) {
+export function Textarea({ label, labelAction, className = "", id, ...props }: TextareaProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
-          {label}
-        </label>
+        <div className="flex items-center justify-between gap-4">
+          <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
+            {label}
+          </label>
+          {labelAction}
+        </div>
       )}
       <textarea
         id={inputId}

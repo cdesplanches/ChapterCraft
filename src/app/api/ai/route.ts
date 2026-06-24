@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     "write-draft",
     "revise",
     "suggest-improvements",
+    "assistant",
   ];
   if (chapterRequired.includes(action) && !chapter) {
     return NextResponse.json({ errorKey: "chapterIdRequired" }, { status: 400 });

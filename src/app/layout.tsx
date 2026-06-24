@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "ChapterCraft — Writing Assistant",
   description:
     "Book writing assistant with narrative coherence checks and pluggable AI providers",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

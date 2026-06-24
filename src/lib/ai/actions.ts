@@ -47,9 +47,29 @@ export async function runAIAction(
 
   const temperature = action === "check-coherence" ? 0.3 : 0.7;
 
-  const content = await chat(project.aiConfig, messages, {
+  // Action-specific defaults for token budget and preferred Groq model
+  const ACTION_DEFAULTS: Record<AIAction, { defaultMaxTokens: number; groqModel?: string }> = {
+    "generate-outline": { defaultMaxTokens: 512 },
+    "expand-outline": { defaultMaxTokens: 1024 },
+    "write-draft": { defaultMaxTokens: 4096, groqModel: "mixtral-8x7b-32768" },
+    revise: { defaultMaxTokens: 2048 },
+    "check-coherence": { defaultMaxTokens: 400 },
+    "suggest-improvements": { defaultMaxTokens: 800 },
+    assistant: { defaultMaxTokens: 2048 },
+  };
+
+  const actionDefaults = ACTION_DEFAULTS[action] || { defaultMaxTokens: 1024 };
+
+  // prepare provider config: allow action to pick preferred model for Groq
+  const cfg = { ...project.aiConfig } as typeof project.aiConfig;
+  if (cfg.type === "groq" && actionDefaults.groqModel) {
+    cfg.groqModel = actionDefaults.groqModel;
+  }
+
+  const content = await chat(cfg, messages, {
     temperature,
-    maxTokens: action === "write-draft" ? 8192 : 4096,
+    maxTokens: actionDefaults.defaultMaxTokens,
+    action,
   });
 
   if (action === "check-coherence") {

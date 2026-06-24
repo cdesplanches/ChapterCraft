@@ -150,6 +150,10 @@ Narrative style suited to the genre. Length: approximately 1500–2500 words.
 Respect the voice and tone established in previous chapters.${extra("Instructions")}`,
       revise: `Revise this chapter's content. Improve prose, pacing, dialogue, and internal coherence.
 Return the complete revised chapter, not just the changes.${extra("Revision focus")}`,
+      assistant: `Act as a literary assistant for this chapter. Execute the following command on the chapter content.
+IMPORTANT: Always return the COMPLETE, REFORMATTED chapter content as your response. Do not return a summary or excerpt.
+If the user asks to reformat, improve, or transform the content, provide the full modified chapter text.
+${extra("Command")}`,
       "check-coherence": `Analyze the global coherence of this literary project.
 
 Evaluate:
@@ -186,6 +190,10 @@ Style narratif adapté au genre. Longueur : environ 1500-2500 mots.
 Respecte la voix et le ton établis dans les chapitres précédents.${extra("Instructions")}`,
       revise: `Révise le contenu de ce chapitre. Améliore la prose, le rythme, les dialogues et la cohérence interne.
 Retourne le chapitre révisé complet, pas seulement les changements.${extra("Focus de révision")}`,
+      assistant: `Agis comme un assistant littéraire pour ce chapitre et exécute la commande suivante sur le contenu du chapitre.
+IMPORTANT : Retourne TOUJOURS le CONTENU COMPLET ET REFORMATÉ du chapitre dans ta réponse. Ne renvoie pas un résumé ou un extrait.
+Si l'utilisateur demande de reformatter, d'améliorer ou de transformer le contenu, fournis le texte du chapitre complet modifié.
+${extra("Commande")}`,
       "check-coherence": `Analyse la cohérence globale de ce projet littéraire.
 
 Évalue :
@@ -222,6 +230,10 @@ Estilo narrativo adaptado al género. Longitud: aproximadamente 1500-2500 palabr
 Respeta la voz y el tono establecidos en los capítulos anteriores.${extra("Instrucciones")}`,
       revise: `Revisa el contenido de este capítulo. Mejora la prosa, el ritmo, los diálogos y la coherencia interna.
 Devuelve el capítulo revisado completo, no solo los cambios.${extra("Enfoque de revisión")}`,
+      assistant: `Actúa como un asistente literario para este capítulo y ejecuta el siguiente comando en el contenido del capítulo.
+IMPORTANTE: Siempre retorna el CONTENIDO COMPLETO Y REFORMATEADO del capítulo en tu respuesta. No devuelvas un resumen o extracto.
+Si el usuario pide reformatear, mejorar o transformar el contenido, proporciona el texto completo modificado del capítulo.
+${extra("Comando")}`,
       "check-coherence": `Analiza la coherencia global de este proyecto literario.
 
 Evalúa:

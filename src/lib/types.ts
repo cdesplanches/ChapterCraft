@@ -71,7 +71,8 @@ export type AIAction =
   | "write-draft"
   | "revise"
   | "check-coherence"
-  | "suggest-improvements";
+  | "suggest-improvements"
+  | "assistant";
 
 export interface AIRequest {
   action: AIAction;
