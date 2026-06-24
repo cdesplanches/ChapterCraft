@@ -118,11 +118,14 @@ export type Messages = {
     outline: string;
     content: string;
     contentPlaceholder: string;
+    formatContent: string;
     notes: string;
     notesPlaceholder: string;
     aiAssist: string;
     optionalInstructions: string;
     instructionsPlaceholder: string;
+    sendAiPrompt: string;
+    applyAiResult: string;
     errorPrefix: string;
   };
   chapterStatus: {
@@ -222,6 +225,9 @@ export type Messages = {
     anthropicKeyMissing: string;
     aiError: string;
     invalidAiConfig: string;
+    aiRequestTooLarge: string;
+    aiRateLimited: string;
+    aiProviderUnavailable: string;
     unknown: string;
     emailPasswordRequired: string;
     passwordTooShort: string;
