@@ -25,7 +25,9 @@ OpenNext incremental cache runs in **dummy** mode (no R2/KV billing for framewor
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) logged in: `npx wrangler login`
 - Node.js 22+ (required by Wrangler 4)
 
-## 1. Create the D1 database
+## 1. Create or reuse the D1 database
+
+The repository already includes a Cloudflare D1 binding in `wrangler.jsonc` for a database named `chaptercraft-db`. If you want to use a different database, update the binding and the `database_id` in that file before deploying.
 
 ```bash
 npx wrangler d1 create chaptercraft-db
@@ -145,6 +147,8 @@ node scripts/upload-local-to-d1.mjs YOUR_USER_ID --remote
 ```
 
 ## 5. Local development
+
+The same app can also be run in Docker with the same optional Cloudflare variables. When those variables are omitted, the app falls back to the local `data/` folder.
 
 ### Standard (filesystem)
 

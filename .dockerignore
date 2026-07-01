@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Next.js and open-next builds
+.next/
+.open-next/
+out/
+
+# Cloudflare wrangler files
+.wrangler/
+
+# Local data / settings database
+data/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Configuration and Documentation
+Dockerfile
+docker-compose.yml
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+docs/

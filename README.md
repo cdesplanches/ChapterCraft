@@ -23,6 +23,23 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+If you want production-like auth or remote D1 access, create a `.env` file at the project root with at least `AUTH_SECRET` and optionally the Cloudflare D1 variables:
+
+```env
+AUTH_SECRET=your-random-secret-key
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_DATABASE_ID=your_d1_database_id
+CLOUDFLARE_API_TOKEN=your_d1_edit_api_token
+```
+
+### Docker
+
+```bash
+docker compose up -d --build
+```
+
+The container exposes the app on [http://localhost:3000](http://localhost:3000) and persists local data in the `data/` folder.
+
 ## AI configuration
 
 Open **Settings** in the header (or go to `/settings`) to choose your LLM provider and model. This applies globally to all projects.
@@ -50,9 +67,10 @@ In **Settings**, choose Anthropic and enter your API key (`sk-ant-...`).
 | Environment | Storage |
 |-------------|---------|
 | Local dev (`npm run dev`) | `data/` on disk |
-| Cloudflare Workers | **D1** (SQLite) — users, projects, settings |
+| Docker (default) | `data/` on the host, persisted via Docker volume |
+| Cloudflare Workers / Docker with Cloudflare vars | **D1** (SQLite) — users, projects, settings |
 
-See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, Workers deploy, auth).
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, Workers deploy, auth), and **[docs/DOCKER.md](docs/DOCKER.md)** for Docker deployment instructions.
 
 ## Scripts
 
@@ -67,6 +85,7 @@ See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, 
 | `npm run cf-typegen` | Generate Cloudflare binding types        |
 | `npm run lint`       | ESLint check                             |
 | `npm run typecheck`  | TypeScript check without building        |
+| `docker compose up -d --build` | Build and start the Docker container |
 
 Pushes to `main` auto-deploy via GitHub Actions (see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** § CI/CD).
 

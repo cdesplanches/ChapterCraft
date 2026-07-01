@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  chaptercraft:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+        CLOUDFLARE_DATABASE_ID: ${CLOUDFLARE_DATABASE_ID:-}
+        CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    container_name: chaptercraft
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - AUTH_SECRET=${AUTH_SECRET:-}
+      # Cloudflare D1 connection (optional, if omitted, app uses local storage volume)
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:-}
+      - CLOUDFLARE_DATABASE_ID=${CLOUDFLARE_DATABASE_ID:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
