@@ -87,6 +87,18 @@ export function Header({ user: userProp, onLogout }: HeaderProps = {}) {
               </Button>
             </>
           )}
+          <a
+            href="https://paypal.me/kcdesplanches"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm text-muted hover:text-accent transition-colors"
+            title={t("header.donate")}
+          >
+            <span className="text-lg" aria-hidden>
+              ❤️
+            </span>
+            <span className="hidden sm:inline">{t("header.donate")}</span>
+          </a>
           <LanguageSwitcher />
         </div>
       </div>

@@ -13,6 +13,7 @@ export const en = {
   header: {
     tagline: "Writing assistant",
     settings: "Settings",
+    donate: "Donate",
   },
   auth: {
     login: "Log in",

@@ -13,6 +13,7 @@ export const fr = {
   header: {
     tagline: "Assistant de rédaction",
     settings: "Paramètres",
+    donate: "Faire un don",
   },
   auth: {
     login: "Connexion",
