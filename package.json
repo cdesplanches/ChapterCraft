@@ -2,6 +2,25 @@
   "name": "chaptercraft",
   "version": "0.1.0",
   "private": true,
+  "description": "AI-assisted writing workspace for planning, drafting, and reviewing book projects.",
+  "homepage": "https://github.com/cdesplanches/ChapterCraft",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cdesplanches/ChapterCraft.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cdesplanches/ChapterCraft/issues"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "ai",
+    "writing",
+    "book-writing",
+    "cloudflare",
+    "d1",
+    "docker"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:clean": "rm -rf .next && next dev --turbopack",

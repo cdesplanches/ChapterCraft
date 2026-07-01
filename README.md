@@ -1,29 +1,46 @@
 # ChapterCraft
 
-A book writing assistant. Define your pitch, work chapter by chapter, and let AI verify narrative coherence across the whole manuscript.
+ChapterCraft is an open-source writing workspace for authors who want to plan a book, write chapter by chapter, and let AI review narrative coherence across the whole manuscript.
+
+It combines a clean project manager, a chapter editor, and AI assistance in one app so you can move from idea to first draft without leaving the tool.
+
+## Why this project?
+
+- Build and organize book projects from a single place
+- Write and refine chapters with structured editing flow
+- Use AI to generate outlines, drafts, and revision suggestions
+- Keep your work local by default, or connect to Cloudflare D1 when needed
+- Run it locally, in Docker, or on Cloudflare Workers
 
 ## Features
 
-- **Project management** — pitch, synopsis, genre, target audience
-- **Chapter editing** — outline, content, notes, status (outline → draft → revision → done)
-- **Per-chapter AI assistance** — outline generation, drafting, revision, suggestions
-- **Coherence analysis** — checks alignment with the pitch and continuity across chapters
-- **Pluggable AI providers**:
-  - **Ollama** (local models, e.g. llama3.2, mistral…)
-  - **OpenAI** (GPT-4o, etc.)
-  - **Anthropic** (Claude)
-- **Multilingual UI** — English, French, and Spanish (selectable in the header)
+- Project management with pitch, synopsis, genre, and audience
+- Chapter workflow with outline, draft, revision, and done states
+- AI assistance per chapter and project-wide coherence review
+- Pluggable providers: Ollama, OpenAI, and Anthropic
+- Multilingual UI in English, French, and Spanish
+
+## Tech stack
+
+- Next.js 15 + React 19
+- TypeScript
+- Tailwind CSS
+- Cloudflare Workers / OpenNext
+- Cloudflare D1
+- Docker
 
 ## Quick start
 
 ```bash
+git clone https://github.com/cdesplanches/ChapterCraft.git
+cd ChapterCraft
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open http://localhost:3000.
 
-If you want production-like auth or remote D1 access, create a `.env` file at the project root with at least `AUTH_SECRET` and optionally the Cloudflare D1 variables:
+If you want production-like auth or remote D1 access, create a .env file at the project root with at least `AUTH_SECRET` and optionally the Cloudflare D1 variables:
 
 ```env
 AUTH_SECRET=your-random-secret-key
@@ -38,73 +55,75 @@ CLOUDFLARE_API_TOKEN=your_d1_edit_api_token
 docker compose up -d --build
 ```
 
-The container exposes the app on [http://localhost:3000](http://localhost:3000) and persists local data in the `data/` folder.
+The container exposes the app on http://localhost:3000 and persists local data in the `data/` folder.
 
 ## AI configuration
 
-Open **Settings** in the header (or go to `/settings`) to choose your LLM provider and model. This applies globally to all projects.
+Open Settings in the header (or go to /settings) to choose your LLM provider and model. This applies globally to all projects.
 
 ### Ollama (local or remote)
 
-1. Install [Ollama](https://ollama.com) on your machine or a server on your network
+1. Install Ollama on your machine or a server on your network
 2. Pull a model: `ollama pull qwen2.5`
-3. In Settings → select **Ollama** → enter your server URL (e.g. `http://hal.local:11434` or just `hal.local:11434`)
-4. Click **Refresh models** to list available models, then pick one (e.g. `qwen2.5`)
-5. **Test connection** to verify
+3. In Settings, select Ollama and enter your server URL
+4. Click Refresh models to list available models and choose one
+5. Test the connection to verify it works
 
 ### OpenAI
 
-In **Settings**, choose OpenAI and enter your API key (`sk-...`).
+In Settings, choose OpenAI and enter your API key.
 
 ### Anthropic (Claude)
 
-In **Settings**, choose Anthropic and enter your API key (`sk-ant-...`).
+In Settings, choose Anthropic and enter your API key.
 
-> API keys and Ollama URLs are stored locally in `data/settings.json`. This file never leaves your machine except for direct API calls to the chosen provider.
+> API keys and Ollama URLs are stored locally in `data/settings.json` and are only sent to the selected provider when you use AI features.
 
 ## Data storage
 
 | Environment | Storage |
-|-------------|---------|
+| --- | --- |
 | Local dev (`npm run dev`) | `data/` on disk |
-| Docker (default) | `data/` on the host, persisted via Docker volume |
-| Cloudflare Workers / Docker with Cloudflare vars | **D1** (SQLite) — users, projects, settings |
+| Docker | `data/` on the host, persisted via Docker volume |
+| Cloudflare Workers / Docker with Cloudflare vars | D1 (SQLite) for users, projects, and settings |
 
-See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for full Cloudflare setup (D1, Workers deploy, auth), and **[docs/DOCKER.md](docs/DOCKER.md)** for Docker deployment instructions.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Cloudflare setup and [docs/DOCKER.md](docs/DOCKER.md) for Docker deployment instructions.
 
 ## Scripts
 
-| Command              | Description                              |
-|----------------------|------------------------------------------|
-| `npm run dev`        | Local development (filesystem)         |
-| `npm run dev:clean`  | Clear cache and start dev (fixes 500 errors) |
-| `npm run preview`    | Local Workers runtime with D1 bindings   |
-| `npm run deploy`     | Build and deploy to Cloudflare Workers |
-| `npm run clean`      | Delete the `.next` build cache           |
-| `npm run build`      | Production build (stop dev first)        |
-| `npm run cf-typegen` | Generate Cloudflare binding types        |
-| `npm run lint`       | ESLint check                             |
-| `npm run typecheck`  | TypeScript check without building        |
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the local development server |
+| `npm run dev:clean` | Clear caches and restart the dev server |
+| `npm run preview` | Local Workers runtime with D1 bindings |
+| `npm run deploy` | Build and deploy to Cloudflare Workers |
+| `npm run build` | Production build |
+| `npm run cf-typegen` | Generate Cloudflare binding types |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript checks |
 | `docker compose up -d --build` | Build and start the Docker container |
-
-Pushes to `main` auto-deploy via GitHub Actions (see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** § CI/CD).
 
 ## Troubleshooting
 
 ### Internal Server Error after code changes
 
-Dev and production builds share the `.next` folder. Running `npm run build` while `npm run dev` is active corrupts the cache and causes 500 errors.
+Dev and production builds share the `.next` folder. Running `npm run build` while `npm run dev` is active can corrupt the cache and cause 500 errors.
 
-**Fix:**
+Quick fix:
 
 ```bash
-# Stop the dev server (Ctrl+C), then:
 npm run dev:clean
 ```
 
-Or manually: `npm run clean` then `npm run dev`.
+Or manually stop the dev server and run `npm run clean` followed by `npm run dev`.
 
-**Prevention:** only run `npm run build` when the dev server is stopped.
+## Contributing
+
+Contributions are welcome. If you want to improve the app, open an issue or submit a pull request.
+
+## Support
+
+If you enjoy the project, consider supporting it via PayPal: https://paypal.me/kcdesplanches
 
 ## License
 
