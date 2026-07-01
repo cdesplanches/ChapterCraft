@@ -28,7 +28,7 @@ export type Messages = {
     error: string;
     optional: string;
   };
-  header: { tagline: string; settings: string };
+  header: { tagline: string; settings: string; donate: string };
   auth: {
     login: string;
     signup: string;
