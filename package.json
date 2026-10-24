@@ -31,15 +31,15 @@
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "jose": "^6.0.11",
-    "next": "^15.3.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -49,11 +49,11 @@
     "@tailwindcss/postcss": "^4.1.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.29",
-    "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/uuid": "^10.0.0",
     "eslint": "^9.28.0",
-    "eslint-config-next": "^15.3.3",
+    "eslint-config-next": "^16.4.3",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "wrangler": "^4.19.0"
