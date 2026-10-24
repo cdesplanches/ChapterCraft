@@ -512,7 +512,7 @@ async function chatOpenCode(
             text: message.content,
           }],
         })),
-        max_output_tokens: options.maxTokens ?? 4096,
+        max_output_tokens: Math.max(options.maxTokens ?? 4096, 16),
       }),
     });
 
