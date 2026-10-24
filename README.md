@@ -17,7 +17,7 @@ It combines a clean project manager, a chapter editor, and AI assistance in one 
 - Project management with pitch, synopsis, genre, and audience
 - Chapter workflow with outline, draft, revision, and done states
 - AI assistance per chapter and project-wide coherence review
-- Pluggable providers: Ollama, OpenAI, and Anthropic
+- Pluggable providers: Ollama, OpenAI, Anthropic, Google Gemini, Groq, OpenRouter, and OpenCode Console
 - Multilingual UI in English, French, and Spanish
 
 ## Tech stack
@@ -76,6 +76,14 @@ In Settings, choose OpenAI and enter your API key.
 ### Anthropic (Claude)
 
 In Settings, choose Anthropic and enter your API key.
+
+### OpenCode Console / Zen
+
+1. Create an API key in the [OpenCode Console](https://opencode.ai/console)
+2. In Settings, select **OpenCode Console / Zen** and paste the key
+3. Click **Refresh models**, choose a model, and test the connection
+
+ChapterCraft loads the current model IDs from OpenCode and routes requests to the matching API format. OpenCode Console usage may be billed per request; check the model pricing and your Console balance before using paid models.
 
 > API keys and Ollama URLs are stored locally in `data/settings.json` and are only sent to the selected provider when you use AI features.
 

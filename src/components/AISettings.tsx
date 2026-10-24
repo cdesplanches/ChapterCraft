@@ -60,6 +60,8 @@ export function AISettings({ config, onSave }: AISettingsProps) {
   } | null>(null);
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [modelsError, setModelsError] = useState("");
+  const [opencodeModels, setOpenCodeModels] = useState<string[]>([]);
+  const [opencodeModelsError, setOpenCodeModelsError] = useState("");
 
   const providerOptions: { value: AIProviderType; label: string }[] = [
     { value: "ollama", label: t("ai.providers.ollama") },
@@ -68,6 +70,7 @@ export function AISettings({ config, onSave }: AISettingsProps) {
     { value: "gemini", label: t("ai.providers.gemini") },
     { value: "groq", label: t("ai.providers.groq") },
     { value: "openrouter", label: t("ai.providers.openrouter") },
+    { value: "opencode", label: t("ai.providers.opencode") },
   ];
 
   const loadOllamaModels = useCallback(async () => {
@@ -94,6 +97,42 @@ export function AISettings({ config, onSave }: AISettingsProps) {
     setLoadingModels(false);
   }, [local.ollamaBaseUrl, t]);
 
+  const loadOpenCodeModels = useCallback(async () => {
+    setLoadingModels(true);
+    setOpenCodeModelsError("");
+    try {
+      const res = await fetch("/api/ai/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: local.opencodeApiKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? t("ai.modelsLoadFailed"));
+      }
+
+      const models: string[] = data.models ?? [];
+      setOpenCodeModels(models);
+      if (models.length === 0) {
+        setOpenCodeModelsError(t("ai.noModelsFound"));
+      } else {
+        setLocal((prev) => {
+          if (prev.opencodeModel && models.includes(prev.opencodeModel)) return prev;
+          return { ...prev, opencodeModel: models[0] };
+        });
+      }
+    } catch (error) {
+      setOpenCodeModelsError(
+        error instanceof Error && error.message !== "OPENCODE_KEY_MISSING"
+          ? error.message
+          : t("ai.opencodeKeyRequired")
+      );
+      setOpenCodeModels([]);
+    } finally {
+      setLoadingModels(false);
+    }
+  }, [local.opencodeApiKey, t]);
+
   useEffect(() => {
     setLocal(config);
   }, [config]);
@@ -114,6 +153,9 @@ export function AISettings({ config, onSave }: AISettingsProps) {
       body: JSON.stringify({ config: normalized, locale }),
     });
     const data = await res.json();
+    if (data.message === "OPENCODE_KEY_MISSING") {
+      data.message = t("errors.opencodeKeyMissing");
+    }
     setTestResult(data);
     setTesting(false);
   }
@@ -318,6 +360,63 @@ export function AISettings({ config, onSave }: AISettingsProps) {
             onChange={(e) => setLocal({ ...local, openrouterModel: e.target.value })}
             placeholder="openrouter/auto"
           />
+        </ProviderSection>
+
+        <ProviderSection
+          title={t("ai.sections.opencode")}
+          hint={t("ai.sections.opencodeHint")}
+          active={local.type === "opencode"}
+          activeLabel={t("ai.activeBadge")}
+        >
+          <Input
+            label={t("ai.opencodeKey")}
+            type="password"
+            value={local.opencodeApiKey ?? ""}
+            onChange={(e) => setLocal({ ...local, opencodeApiKey: e.target.value })}
+            placeholder="oc-..."
+            autoComplete="off"
+          />
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              {opencodeModels.length > 0 ? (
+                <Select
+                  label={t("ai.model")}
+                  value={local.opencodeModel ?? ""}
+                  onChange={(e) => setLocal({ ...local, opencodeModel: e.target.value })}
+                  options={[
+                    ...(local.opencodeModel && !opencodeModels.includes(local.opencodeModel)
+                      ? [{ value: local.opencodeModel, label: local.opencodeModel }]
+                      : []),
+                    ...opencodeModels.map((model) => ({ value: model, label: model })),
+                  ]}
+                />
+              ) : (
+                <Input
+                  label={t("ai.model")}
+                  value={local.opencodeModel ?? ""}
+                  onChange={(e) => setLocal({ ...local, opencodeModel: e.target.value })}
+                  placeholder="gpt-6-luna"
+                />
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={loadOpenCodeModels}
+              loading={loadingModels}
+            >
+              {t("ai.listModels")}
+            </Button>
+          </div>
+          {opencodeModelsError && (
+            <p className="text-xs text-red-600">{opencodeModelsError}</p>
+          )}
+          {opencodeModels.length > 0 && (
+            <p className="text-xs text-muted">
+              {t("ai.modelsAvailable", { count: opencodeModels.length })}
+            </p>
+          )}
         </ProviderSection>
       </div>
 

@@ -183,6 +183,8 @@ export type Messages = {
     geminiKey: string;
     groqKey: string;
     openrouterKey: string;
+    opencodeKey: string;
+    opencodeKeyRequired: string;
     testConnection: string;
     connectionSuccess: string;
     activeModel: string;
@@ -202,6 +204,8 @@ export type Messages = {
       groqHint: string;
       openrouter: string;
       openrouterHint: string;
+      opencode: string;
+      opencodeHint: string;
     };
     providers: {
       ollama: string;
@@ -210,6 +214,7 @@ export type Messages = {
       gemini: string;
       groq: string;
       openrouter: string;
+      opencode: string;
     };
   };
   errors: {
@@ -223,6 +228,7 @@ export type Messages = {
     unknownProvider: string;
     openaiKeyMissing: string;
     anthropicKeyMissing: string;
+    opencodeKeyMissing: string;
     aiError: string;
     invalidAiConfig: string;
     aiRequestTooLarge: string;

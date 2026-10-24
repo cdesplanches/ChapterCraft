@@ -182,6 +182,8 @@ export const fr = {
     geminiKey: "Clé API Google Gemini",
     groqKey: "Clé API Groq",
     openrouterKey: "Clé API OpenRouter",
+    opencodeKey: "Clé API OpenCode Console",
+    opencodeKeyRequired: "Saisissez votre clé API OpenCode Console.",
     testConnection: "Tester le fournisseur actif",
     connectionSuccess: "Connexion réussie",
     activeModel: "Actuellement actif",
@@ -201,6 +203,9 @@ export const fr = {
       groqHint: "API cloud — nécessite une clé API depuis console.groq.com.",
       openrouter: "OpenRouter",
       openrouterHint: "API cloud — nécessite une clé API depuis openrouter.ai.",
+      opencode: "OpenCode Console / Zen",
+      opencodeHint:
+        "Catalogue de modèles OpenCode Console. La facturation dépend du modèle sélectionné ; créez une clé sur opencode.ai/console.",
     },
     providers: {
       ollama: "Ollama (local / distant)",
@@ -209,6 +214,7 @@ export const fr = {
       gemini: "Google Gemini",
       groq: "Groq",
       openrouter: "OpenRouter",
+      opencode: "OpenCode Console / Zen",
     },
   },
   errors: {
@@ -222,6 +228,7 @@ export const fr = {
     unknownProvider: "Provider inconnu : {provider}",
     openaiKeyMissing: "Clé API OpenAI non configurée",
     anthropicKeyMissing: "Clé API Anthropic non configurée",
+    opencodeKeyMissing: "Clé API OpenCode Console non configurée",
     aiError: "Erreur IA",
     aiRequestTooLarge: "Requête IA trop volumineuse. Réduis le texte, divise le chapitre ou saisis une instruction plus courte.",
     aiRateLimited: "Limite d'API atteinte. Réessaie dans quelques secondes.",

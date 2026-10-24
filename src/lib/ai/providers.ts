@@ -53,7 +53,6 @@ function shrinkMessagesToFit(messages: ChatMessage[], maxInputTokens: number) {
   }
 
   // Return messages in original order but with trimmed contents
-  const trimmedMap = new Map(resultOthers.map((m) => [m.content, m]));
   return messages.map((m) => {
     if (m.role === "system") return m;
     // find corresponding trimmed by matching original prefix or fallback to truncated
@@ -105,6 +104,8 @@ export async function chat(
       return chatGroq(config, messages, options);
     case "openrouter":
       return chatOpenRouter(config, messages, options);
+    case "opencode":
+      return chatOpenCode(config, messages, options);
     default:
       throw new Error(`Unknown provider: ${config.type}`);
   }
@@ -400,6 +401,158 @@ async function chatOpenRouter(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+type OpenCodeApi = "responses" | "anthropic" | "gemini" | "chat-completions";
+
+function getOpenCodeModelId(model: string): string {
+  return model.startsWith("opencode/") ? model.slice("opencode/".length) : model;
+}
+
+function getOpenCodeApi(model: string): OpenCodeApi {
+  const id = getOpenCodeModelId(model).toLowerCase();
+  if (id.startsWith("gemini-")) return "gemini";
+  if (
+    id.startsWith("claude-") ||
+    /^qwen3\.(?:5|6|7|8)-(?:flash|plus)/.test(id)
+  ) {
+    return "anthropic";
+  }
+  if (id.startsWith("gpt-") || id.startsWith("grok-") || id.startsWith("muse-")) {
+    return "responses";
+  }
+  return "chat-completions";
+}
+
+async function chatOpenCode(
+  config: AIProviderConfig,
+  messages: ChatMessage[],
+  options: LLMOptions
+): Promise<string> {
+  const apiKey = config.opencodeApiKey?.trim();
+  if (!apiKey) {
+    throw new Error("OPENCODE_KEY_MISSING");
+  }
+
+  const model = getOpenCodeModelId(config.opencodeModel ?? "gpt-6-luna");
+  const api = getOpenCodeApi(model);
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  if (api === "anthropic") {
+    const systemMessage = messages.find((message) => message.role === "system");
+    const response = await fetch("https://opencode.ai/inference/anthropic/v1/messages", {
+      method: "POST",
+      headers: { ...headers, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model,
+        max_tokens: options.maxTokens ?? 4096,
+        system: systemMessage?.content,
+        messages: messages
+          .filter((message) => message.role !== "system")
+          .map((message) => ({
+            role: message.role === "assistant" ? "assistant" : "user",
+            content: message.content,
+          })),
+        temperature: options.temperature ?? 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenCode (${response.status}): ${await response.text()}`);
+    }
+    const data = (await response.json()) as { content?: { type: string; text?: string }[] };
+    return data.content?.find((item) => item.type === "text")?.text ?? "";
+  }
+
+  if (api === "gemini") {
+    const systemMessage = messages.find((message) => message.role === "system");
+    const response = await fetch(
+      `https://opencode.ai/inference/google/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          system_instruction: systemMessage?.content
+            ? { parts: [{ text: systemMessage.content }] }
+            : undefined,
+          contents: messages
+            .filter((message) => message.role !== "system")
+            .map((message) => ({
+              role: message.role === "user" ? "user" : "model",
+              parts: [{ text: message.content }],
+            })),
+          generationConfig: {
+            temperature: options.temperature ?? 0.7,
+            maxOutputTokens: options.maxTokens ?? 4096,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`OpenCode (${response.status}): ${await response.text()}`);
+    }
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    return data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
+  }
+
+  if (api === "responses") {
+    const response = await fetch("https://opencode.ai/inference/openai/v1/responses", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        input: messages.map((message) => ({
+          role: message.role,
+          content: [{
+            type: message.role === "assistant" ? "output_text" : "input_text",
+            text: message.content,
+          }],
+        })),
+        max_output_tokens: options.maxTokens ?? 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenCode (${response.status}): ${await response.text()}`);
+    }
+    const data = (await response.json()) as {
+      output_text?: string;
+      output?: { content?: { type?: string; text?: string }[] }[];
+    };
+    return data.output_text ?? data.output
+      ?.flatMap((item) => item.content ?? [])
+      .filter((item) => item.type === "output_text" || item.text)
+      .map((item) => item.text ?? "")
+      .join("") ?? "";
+  }
+
+  const response = await fetch("https://opencode.ai/inference/openai/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenCode (${response.status}): ${await response.text()}`);
+  }
+  const data = (await response.json()) as {
+    choices?: { message?: { content?: string | { text?: string }[] } }[];
+  };
+  const content = data.choices?.[0]?.message?.content;
+  return Array.isArray(content)
+    ? content.map((part) => part.text ?? "").join("")
+    : content ?? "";
+}
+
 export async function testConnection(
   config: AIProviderConfig,
   locale: Locale = DEFAULT_LOCALE
@@ -437,4 +590,23 @@ export async function listOllamaModels(
   } catch {
     return [];
   }
+}
+
+export async function listOpenCodeModels(apiKey: string): Promise<string[]> {
+  const response = await fetch("https://opencode.ai/inference/v1/models", {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) {
+    throw new Error(`OpenCode (${response.status}): ${await response.text()}`);
+  }
+
+  const data = (await response.json()) as {
+    data?: { id?: string }[];
+  };
+  return (data.data ?? [])
+    .map((model) => model.id)
+    .filter(
+      (id): id is string =>
+        typeof id === "string" && id !== "test" && !id.startsWith("jev-")
+    );
 }

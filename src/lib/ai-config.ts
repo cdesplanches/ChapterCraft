@@ -22,6 +22,8 @@ export function getActiveModelLabel(config: AIProviderConfig): string {
       return config.groqModel ?? "mixtral-8x7b-32768";
     case "openrouter":
       return config.openrouterModel ?? "openrouter/auto";
+    case "opencode":
+      return config.opencodeModel ?? "gpt-6-luna";
     default:
       return "—";
   }
